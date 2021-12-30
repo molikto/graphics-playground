@@ -44,16 +44,18 @@ impl<'a, const BLOCK_DIM: u32, const LEVEL_COUNT: usize> Svo<'a, BLOCK_DIM, LEVE
         return 1;
     }
 
+    // in bytes
     pub fn mem_used(&self) -> usize {
-        return self.mem[0] as usize - self.root_block_index();
+        return (self.mem[0] as usize - self.root_block_index()) * 4;
     }
 
     pub fn block_count(&self) -> usize {
         return (self.mem[0] as usize - self.root_block_index()) / (Self::BLOCK_SIZE as usize);
     }
 
+    // memory ratio assuming each block use a byte of memory.
     pub fn memory_ratio(&self) -> f32 {
-        let size = (self.mem[0] as usize - self.root_block_index()) * 4;
+        let size = self.mem_used();
         let native_size = (BLOCK_DIM.pow(LEVEL_COUNT as u32)).pow(3);
         return size as f32 / (native_size as f32);
     }
@@ -118,7 +120,7 @@ impl<'a, const BLOCK_DIM: u32, const LEVEL_COUNT: usize> Svo<'a, BLOCK_DIM, LEVE
     #[inline]
     pub fn traverse_ray<C>(&self, mut ray: Ray3, mut closure: C) -> u32
     where
-        C: FnMut(BlockInfo<BLOCK_DIM, LEVEL_COUNT>, Vec3, u32) -> bool,
+        C: FnMut(BlockInfo<BLOCK_DIM, LEVEL_COUNT>, Vec3) -> bool,
     {
         // TODO there are still cases where it infinite loop..
         // the max dim we can have is 8^8, otherwise it will not work because of floating point issue
@@ -129,8 +131,9 @@ impl<'a, const BLOCK_DIM: u32, const LEVEL_COUNT: usize> Svo<'a, BLOCK_DIM, LEVE
         }
         let ray_dir_signum = ray.dir.signum();
         let ray_dir_limit_mul = (ray_dir_signum + 1.0) / 2.0;
-        let total_dim = Self::total_dim() as f32;
-        let aabb = Aabb3::new(Vec3::ZERO, Vec3::splat(total_dim));
+        let total_dim= Self::total_dim();
+        let total_dim_f = total_dim as f32;
+        let aabb = Aabb3::new(Vec3::ZERO, Vec3::splat(total_dim_f));
         let mut mask: Vec3;
         let mut position: Vec3;
         if aabb.inside(ray.pos) {
@@ -146,13 +149,14 @@ impl<'a, const BLOCK_DIM: u32, const LEVEL_COUNT: usize> Svo<'a, BLOCK_DIM, LEVE
         block_indexs[0] = self.root_block_index();
 
         let mut block_limits = [Vec3::ZERO; LEVEL_COUNT];
-        block_limits[0] = ray_dir_limit_mul * total_dim;
+        block_limits[0] = ray_dir_limit_mul * total_dim_f;
         // there is a off by one error...
         let mut block_limit: Vec3;
         //
         // block aabbs is terminal block
         let mut level = 0u32;
         let mut position_up = UVec3::ZERO;
+        let mut level_dim_div= total_dim / BLOCK_DIM;
         loop {
             loop {
                 // exit levels first
@@ -164,14 +168,9 @@ impl<'a, const BLOCK_DIM: u32, const LEVEL_COUNT: usize> Svo<'a, BLOCK_DIM, LEVE
                     return 0;
                 } else {
                     level -= 1;
+                    level_dim_div *= BLOCK_DIM;
                 }
             }
-            // level = 0;
-            // let mut block_limit = ray_dir_limit_mul * Self::total_dim() as f32;
-            // let test = ((block_limit - position).signum() * ray_dir_signum).sum();
-            // if test != 3.0 {
-            //     return;
-            // }
             // go inside levels
             let mut level_position_abs: UVec3;
             let mut index: u32;
@@ -181,18 +180,18 @@ impl<'a, const BLOCK_DIM: u32, const LEVEL_COUNT: usize> Svo<'a, BLOCK_DIM, LEVE
             }
             position_up = position_u;
             loop {
-                level_position_abs = self.level_position_abs(position_u, level);
+                level_position_abs = position_u / level_dim_div;
                 let level_position = level_position_abs % BLOCK_DIM;
                 let target_block_index =
                     block_indexs[level as usize] + Self::encode(level_position);
                 let target_block = self.mem[target_block_index];
                 index = Self::block_index_data(target_block);
-                level += 1;
-                let block_size = BLOCK_DIM.pow(LEVEL_COUNT as u32 - level) as f32;
-                block_limit = (level_position_abs.as_vec3() + ray_dir_limit_mul) * block_size;
+                block_limit = (level_position_abs.as_vec3() + ray_dir_limit_mul) * (level_dim_div as f32);
                 if Self::is_terminal_block(target_block) {
                     break;
                 }
+                level += 1;
+                level_dim_div /= BLOCK_DIM; // must be here or we get 1 / N
                 block_limits[level as usize] = block_limit;
                 block_indexs[level as usize] = index as usize;
             }
@@ -209,7 +208,7 @@ impl<'a, const BLOCK_DIM: u32, const LEVEL_COUNT: usize> Svo<'a, BLOCK_DIM, LEVE
                 level,
                 data: index,
             };
-            let ret = closure(block_info, mask, level);
+            let ret = closure(block_info, mask);
             if ret {
                 return 0;
             }
@@ -222,9 +221,6 @@ impl<'a, const BLOCK_DIM: u32, const LEVEL_COUNT: usize> Svo<'a, BLOCK_DIM, LEVE
             // this floating point position is because we use unsigned position_u, it's actually value doesn't mater that much
             // we add extra value so we don't step on the boundary. `position = ray.at(t + 0.01)` doesn't work
             position = ray.at(t) + mask / 2.0;
-
-            // here we can always go out a level
-            level -= 1;
         }
     }
 
@@ -392,7 +388,7 @@ mod tests {
                 //     pos: Vec3::new(i as f32 + 0.4, j as f32 + 0.4, 0.1) / (image_size as f32) * (TOTAL as f32),
                 //     dir: Vec3::new(0.1, 0.1, 1.0),
                 // };
-                svo.traverse_ray(ray, |block, hit_mask, _| {
+                svo.traverse_ray(ray, |block, hit_mask| {
                     let hit = block.data != 0;
                     if hit {
                         let light_level = vec3(0.6, 0.75, 1.0);
@@ -432,7 +428,7 @@ mod tests {
                     pos: vec3(rng.gen(), rng.gen(), rng.gen()) * size,
                     dir: vec3(rng.gen(), rng.gen(), rng.gen()) * size,
                 },
-                |block, mask, _| {
+                |block, mask| {
                     count += 1;
                     if count > 300 {
                         assert_eq!(0, 1);
@@ -519,7 +515,7 @@ mod tests {
                     pos: Vec3::new(i as f32, j as f32, 200.0) / 100.0 * 256.0,
                     dir: Vec3::new(0.1, 0.1, -1.0),
                 };
-                svo.traverse_ray(ray, |block, _, _| {
+                svo.traverse_ray(ray, |block, _| {
                     hit = block.data == 1;
                     if hit {
                         image.put_pixel(i, j, Rgb([255, 0, 0]));

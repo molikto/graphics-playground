@@ -13,7 +13,7 @@ use bevy::{
     prelude::{App, Assets, Commands, ResMut, Transform, Msaa},
     render::{
         color::Color,
-        mesh::{shape, Mesh}, options::{WgpuOptions, Backends},
+        mesh::{shape, Mesh}, options::{WgpuOptions, Backends}, render_resource::WgpuLimits,
     },
     utils::Instant,
     window::WindowDescriptor,
@@ -21,7 +21,8 @@ use bevy::{
 };
 
 pub mod env_render;
-use bevy_common::{RevertBox, create_debug_cube};
+pub mod load_rsvo;
+use bevy_common::{RevertBox, create_debug_cube, MovementSettings};
 use bsoky_no_std::{BLOCK_DIM, LEVEL_COUNT, MySvo};
 use common::math::svo::*;
 use common::math::*;
@@ -29,6 +30,15 @@ use common::math::*;
 use env_render::CustomMaterial;
 use sdfu::{SDF};
 
+
+
+fn debug_create_rsvo(mem: &mut Box<[u32]>) {
+    let mut svo = MySvo::init(mem, 0);
+    // download yourself here https://github.com/ephtracy/voxel-model/blob/master/svo/
+    let rsvo = std::fs::read( Path::new(env!("CARGO_MANIFEST_DIR")).join("sibenik_8k.rsvo")).unwrap();
+    load_rsvo::load_rsvo(&rsvo, &mut svo);
+    println!("rsvo size: {}, svo size {}, ratio: {}", rsvo.len(), svo.mem_used(), svo.memory_ratio());
+}
 
 fn debug_create1(mem: &mut Box<[u32]>) {
     let mut svo = MySvo::init(mem, 0);
@@ -105,8 +115,8 @@ fn create_simple_debug_objects(
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<CustomMaterial>>,
 ) {
-    let mut mem = vec![0u32; 10000000].into_boxed_slice();
-    debug_create(&mut mem);
+    let mut mem = vec![0u32; 3800000000].into_boxed_slice();
+    debug_create_rsvo(&mut mem);
     let total_size = MySvo::total_dim() as f32;
     let mesh = meshes.add(RevertBox::zero_with_size(Vec3::splat(total_size)).into());
     let material = materials.add(CustomMaterial { svo: mem });
@@ -123,6 +133,10 @@ fn main() {
         .insert_resource(Msaa {  samples: 1 })
         .insert_resource(WgpuOptions {
             backends: Backends::VULKAN,
+            limits: WgpuLimits {
+                max_storage_buffer_binding_size: 4000000000,
+                ..Default::default()
+            },
             ..Default::default()
         })
         .insert_resource(WindowDescriptor {
@@ -135,6 +149,10 @@ fn main() {
             ..Default::default()
         })
         .add_plugins(DefaultPlugins)
+        .insert_resource(MovementSettings { 
+            speed: 120.,
+            ..Default::default()
+        })
         .insert_resource(bevy_common::camera::CameraSetupParameter {
             position: Vec3::splat((BLOCK_DIM.pow(LEVEL_COUNT as u32) / 2) as f32),
         })

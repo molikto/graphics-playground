@@ -45,7 +45,7 @@ fn initial_grab_cursor(mut windows: ResMut<Windows>) {
     toggle_grab_cursor(windows.get_primary_mut().unwrap());
 }
 
-pub struct CameraSetupParameter{
+pub struct CameraSetupParameter {
     pub position: Vec3,
 }
 
@@ -100,6 +100,7 @@ fn update_camera_system(
     if keys.pressed(KeyCode::D) {
         move_vec.x += 1.0;
     }
+    move_vec *= 100.0;
 
     if keys.pressed(KeyCode::E) || keys.pressed(KeyCode::Space) {
         move_vec.y += 1.0;
@@ -156,7 +157,6 @@ pub struct PlayerPlugin;
 impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<InputState>()
-            .init_resource::<MovementSettings>()
             .add_startup_system(setup_player)
             //.add_startup_system(initial_grab_cursor)
             .add_system(update_camera_system)

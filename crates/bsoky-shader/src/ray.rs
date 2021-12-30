@@ -4,7 +4,7 @@ use common_no_std::{svo::Svo, *};
 pub fn shade_ray(svo: Svo<BLOCK_DIM, LEVEL_COUNT>, ray: Ray3) -> Vec3 {
     let mut count = 0;
     let mut hit_mask: Vec3 = Vec3::ZERO;
-    let error_code = svo.traverse_ray(ray, |info, mask, _| {
+    let error_code = svo.traverse_ray(ray, |info, mask| {
         // debug count
         count += 1;
         if count > 100 {
