@@ -1,4 +1,4 @@
-my graphics playground in Rust, with (listing interesting dependencies because there might be bugs in there):
+my graphics playground in Rust, using:
 
 * https://github.com/gfx-rs/naga
 * https://github.com/gfx-rs/wgpu

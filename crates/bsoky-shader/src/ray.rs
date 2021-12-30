@@ -7,7 +7,7 @@ pub fn shade_ray(svo: Svo<BLOCK_DIM, LEVEL_COUNT>, ray: Ray3) -> Vec3 {
     let error_code = svo.traverse_ray(ray, |info, mask, _| {
         // debug count
         count += 1;
-        if count > 1000 {
+        if count > 100 {
             return true;
         }
         // debug levels
@@ -30,7 +30,7 @@ pub fn shade_ray(svo: Svo<BLOCK_DIM, LEVEL_COUNT>, ray: Ray3) -> Vec3 {
         } else if error_code == 3 {
             return vec3(0.0, 0.0, 1.0);
         } else if error_code == 4 {
-            return vec3(1.0, 1.0, 0.0);
+            return vec3(1.0, 0.0, 0.0);
         } else if error_code == 5 {
             return vec3(1.0, 0.0, 1.0);
         } else if error_code == 6 {
@@ -40,7 +40,7 @@ pub fn shade_ray(svo: Svo<BLOCK_DIM, LEVEL_COUNT>, ray: Ray3) -> Vec3 {
         }
     } else {
         // debug how much voxel get traveled
-        return Vec3::splat((count as f32) / 1000.0);
+        return Vec3::splat((count as f32) / 100.0);
         // debug levels
         // return Vec3::splat((count as f32) / 1000.0);
         // let light_level = vec3(0.6, 0.75, 1.0);

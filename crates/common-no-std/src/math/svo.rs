@@ -116,10 +116,11 @@ impl<'a, const BLOCK_DIM: u32, const LEVEL_COUNT: usize> Svo<'a, BLOCK_DIM, LEVE
     }
 
     #[inline]
-    pub fn traverse_ray<C>(&self, mut ray: Ray3, mut closure: C) ->  u32
+    pub fn traverse_ray<C>(&self, mut ray: Ray3, mut closure: C) -> u32
     where
         C: FnMut(BlockInfo<BLOCK_DIM, LEVEL_COUNT>, Vec3, u32) -> bool,
     {
+        // TODO there are still cases where it infinite loop..
         // the max dim we can have is 8^8, otherwise it will not work because of floating point issue
         // https://itectec.com/matlab-ref/matlab-function-flintmax-largest-consecutive-integer-in-floating-point-format/
         ray.dir = ray.dir.normalize_or_zero();
@@ -198,18 +199,17 @@ impl<'a, const BLOCK_DIM: u32, const LEVEL_COUNT: usize> Svo<'a, BLOCK_DIM, LEVE
             let ts = (block_limit - ray.pos) / ray.dir;
             let ts_min = ts.min_element();
             if ts_min < t {
-                return 1;
+                // TODO this fixes some problem of inifinite looping
+                t = t + 0.0001;
+            } else {
+                t = ts_min;
             }
-            t = ts_min;
-            let ret = closure(
-                BlockInfo {
-                    level_position_abs,
-                    level,
-                    data: index,
-                },
-                mask,
+            let block_info = BlockInfo {
+                level_position_abs,
                 level,
-            );
+                data: index,
+            };
+            let ret = closure(block_info, mask, level);
             if ret {
                 return 0;
             }
