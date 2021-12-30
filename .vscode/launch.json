@@ -1,0 +1,48 @@
+{
+  // Use IntelliSense to learn about possible attributes.
+  // Hover to view descriptions of existing attributes.
+  // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "type": "lldb",
+      "request": "launch",
+      "name": "Debug executable 'bsoky'",
+      "cargo": {
+        "args": [
+          "build",
+          "--bin=bsoky",
+          "--package=bsoky"
+        ],
+        "filter": {
+          "name": "bsoky",
+          "kind": "bin"
+        }
+      },
+      "args": [],
+      "cwd": "${workspaceFolder}",
+      "env": {
+        "CARGO_MANIFEST_DIR": "${workspaceFolder}\\crates\\bsoky",
+        "RUST_BACKTRACE": "full"
+      }
+    },
+    {
+      "type": "lldb",
+      "request": "launch",
+      "name": "Debug unit tests in 'common'",
+      "cargo": {
+        "args": [
+          "test",
+          "--no-run",
+          "--package=common",
+        ],
+      },
+      "args": [],
+      "cwd": "${workspaceFolder}",
+      "env": {
+        "CARGO_MANIFEST_DIR": "${workspaceFolder}\\crates\\common",
+        "RUST_BACKTRACE": "full"
+      }
+    }
+  ]
+}

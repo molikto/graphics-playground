@@ -1,0 +1,31 @@
+[workspace]
+members = [ "./crates/*" ]
+resolver = "2"
+
+# compile build scripts (which might include rust-gpu) optimized
+[profile.release.build-override]
+opt-level = 3
+codegen-units = 16
+
+# compile build scripts (which might include rust-gpu) optimized
+[profile.dev.build-override]
+opt-level = 3
+
+# compile dependencies (not workspace member) optimized
+# https://doc.rust-lang.org/cargo/reference/profiles.html#overrides
+[profile.dev.package."*"]
+opt-level = 3
+
+# [profile.release]
+# debug = true
+
+[patch.crates-io]
+num-traits = { git = "https://github.com/rust-num/num-traits" }
+winit = { git = "https://github.com/madsmtm/winit", branch="fix-colorsync-linking" }
+# bevy = { git="https://github.com/bevyengine/bevy", branch="main" }
+bevy = { git = "https://github.com/molikto/bevy" }
+
+[patch."https://github.com/bevyengine/bevy"]
+bevy = { git = "https://github.com/molikto/bevy", branch="shader-bypass" }
+
+## bevy 4423a2fa2dc82fad71525ed3f44e16b8481a4902

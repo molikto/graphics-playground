@@ -1,0 +1,48 @@
+[package]
+name = "bsoky"
+version = "0.1.0"
+edition = "2021"
+
+[build-dependencies]
+spirv-builder = { git = "https://github.com/EmbarkStudios/rust-gpu/", features = [ "watch"] }
+
+[dependencies]
+variant_count = "1.1.0"
+num_enum = "0.5.4"
+transmute = "0.1.1"
+num-traits = "0.2.14"
+maplit = "1.0.2"
+packed_struct = "0.10.0"
+rand = "0.8.4"
+rand_pcg = "0.3.1"
+enum-map= "1.1.1"
+derive_more = "0.99.16"
+lazy_static = "1.4.0"
+serde = "1.0.130"
+serde_derive = "1.0.130"
+smallvec = { version = "1.7.0", features = ["serde", "union"] }
+lazy-static-include = "1.2.1"
+ron = "0.6.0"
+
+log = "0.4.0"
+env_logger = "0.9"
+
+noise = "0.7"
+morton-encoding = "2.0.1"
+
+## graphic API
+bytemuck = { version = "1.7.2", features = ["derive"] }
+
+
+dolly = "0.1.4"
+egui = "0.14.2"
+bevy = { git="https://github.com/bevyengine/bevy", branch="main" }
+
+bevy_egui = { git = "https://github.com/jakobhellermann/bevy_egui", branch = "bevy-main", default-features = false, features = ["open_url"] }
+bevy-inspector-egui = { git="https://github.com/jakobhellermann/bevy-inspector-egui", branch="bevy-main" }
+
+common = { path = "../common" }
+bevy-common = { path = "../bevy-common" }
+bsoky-no-std = { path = "../bsoky-no-std" }
+
+sdfu = { version="0.3.1-alpha.1", features=["glam"] }
