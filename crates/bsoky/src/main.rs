@@ -140,10 +140,8 @@ fn main() {
             ..Default::default()
         })
         .insert_resource(WindowDescriptor {
-            width: 720.0,
+            width: 1080.0,
             height: 720.0,
-            // width: 1080.0,
-            // height: 1080.0,
             title: "codename: bsoky".into(),
             position: Some(Vec2::new(0.0, 24.0)),
             ..Default::default()
