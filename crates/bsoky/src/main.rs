@@ -13,7 +13,7 @@ use bevy::{
     prelude::{App, Assets, Commands, ResMut, Transform, Msaa},
     render::{
         color::Color,
-        mesh::{shape, Mesh},
+        mesh::{shape, Mesh}, options::{WgpuOptions, Backends},
     },
     utils::Instant,
     window::WindowDescriptor,
@@ -121,6 +121,10 @@ fn main() {
     //simulation_benchmark();
     App::new()
         .insert_resource(Msaa {  samples: 1 })
+        .insert_resource(WgpuOptions {
+            backends: Backends::VULKAN,
+            ..Default::default()
+        })
         .insert_resource(WindowDescriptor {
             width: 720.0,
             height: 720.0,
