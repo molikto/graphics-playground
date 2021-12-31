@@ -14,12 +14,13 @@ use bevy::{
       renderer::RenderDevice,
   },
 };
+use common::math::svo::usvo;
 
 
 #[derive(Debug, Clone, TypeUuid)]
 #[uuid = "4ee9c363-1124-4113-890e-199d81b00281"]
 pub struct CustomMaterial {
-    pub svo: Box<[u32]>,
+    pub svo: Box<[usvo]>,
 }
 
 #[derive(Clone)]

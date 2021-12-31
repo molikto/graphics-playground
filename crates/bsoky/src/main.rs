@@ -32,21 +32,21 @@ use sdfu::{SDF};
 
 
 
-fn debug_create_rsvo(mem: &mut Box<[u32]>) {
+fn debug_create_rsvo(mem: &mut Box<[usvo]>) {
     let mut svo = MySvo::init(mem, 0);
     // download yourself here https://github.com/ephtracy/voxel-model/blob/master/svo/
     let rsvo = std::fs::read( Path::new(env!("CARGO_MANIFEST_DIR")).join("sibenik_8k.rsvo")).unwrap();
-    load_rsvo::load_rsvo(&rsvo, &mut svo);
-    println!("rsvo size: {}, svo size {}, ratio: {}", rsvo.len(), svo.mem_used(), svo.memory_ratio());
+    // load_rsvo::load_rsvo(&rsvo, &mut svo);
+    println!("rsvo size: {}, svo size {}, ratio: {}", rsvo.len(), svo.memory_used(), svo.memory_ratio());
 }
 
-fn debug_create1(mem: &mut Box<[u32]>) {
+fn debug_create1(mem: &mut Box<[usvo]>) {
     let mut svo = MySvo::init(mem, 0);
-    svo.set(UVec3::new(3, 3, 3), 1);
+    svo.set(Usvo3::new(3, 3, 3), 1);
     //println!("{:?}", svo.debug_items());
     println!("{:?}", mem[0..10].to_vec());
 }
-fn debug_create(mem: &mut Box<[u32]>) {
+fn debug_create_sdf(mem: &mut Box<[usvo]>) {
     // 4,4 = 0.21
     // 2,8 = 0.11
     let mut svo = MySvo::init(mem, 0);
@@ -71,10 +71,10 @@ fn debug_create(mem: &mut Box<[u32]>) {
         .scale(0.5)
         .translate(Vec3A::new(0.5, 0.5, 0.5));
     let total_size = MySvo::total_dim() as f32;
-    for level in 0..LEVEL_COUNT as u32 {
+    for level in 0..LEVEL_COUNT as usvo {
         let level_cap = level + 1;
-        let level_dim = BLOCK_DIM.pow(level_cap);
-        let level_size = BLOCK_DIM.pow(LEVEL_COUNT as u32 - level_cap);
+        let level_dim = BLOCK_DIM.pow(level_cap as u32);
+        let level_size = BLOCK_DIM.pow(LEVEL_COUNT as u32 - (level_cap as u32));
         for x in 0..level_dim {
             for y in 0..level_dim {
                 for z in 0..level_dim {
@@ -100,14 +100,14 @@ fn debug_create(mem: &mut Box<[u32]>) {
                     };
                     svo.set_with_level_cap(
                         level_cap,
-                        uvec3(x * level_size, y * level_size, z * level_size),
+                        Usvo3::new(x * level_size, y * level_size, z * level_size),
                         material,
                     );
                 }
             }
         }
     }
-    println!("svo block count {}, memory ratio {}", svo.block_count(), svo.memory_ratio());
+    println!("total dim {} block count {}, memory used {}", MySvo::total_dim(), svo.block_count(), svo.memory_used());
 }
 
 fn create_simple_debug_objects(
@@ -115,8 +115,8 @@ fn create_simple_debug_objects(
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<CustomMaterial>>,
 ) {
-    let mut mem = vec![0u32; 3800000000].into_boxed_slice();
-    debug_create_rsvo(&mut mem);
+    let mut mem = vec![0 as usvo; 3800000000].into_boxed_slice();
+    debug_create_sdf(&mut mem);
     let total_size = MySvo::total_dim() as f32;
     let mesh = meshes.add(RevertBox::zero_with_size(Vec3::splat(total_size)).into());
     let material = materials.add(CustomMaterial { svo: mem });

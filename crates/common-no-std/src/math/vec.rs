@@ -1,4 +1,8 @@
+use core::ops::{Add, Div, Mul, Rem};
+
 pub use glam::*;
+use num_traits::Zero;
+
 
 pub trait VecExt {
     fn step(self, other: Self) -> Self;
@@ -113,9 +117,106 @@ impl Vec3Ext for Vec3 {
     }
 }
 
-pub fn barycentric(a: Vec2, b: Vec2, c: Vec2, p: Vec2) -> Vec3 {
-    let v0 = Vec3::new(c[0] - a[0], b[0] - a[0], a[0] - p[0]);
-    let v1 = Vec3::new(c[1] - a[1], b[1] - a[1], a[1] - p[1]);
-    let u = v0.cross(v1);
-    return Vec3::new(1.0 - (u[0] + u[1]) / u[2], u[1] / u[2], u[0] / u[2]);
+
+
+// suvec3
+
+
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub struct SUVec3 {
+    pub x: u16,
+    pub y: u16,
+    pub z: u16,
+}
+
+
+pub fn suvec3(x: u16, y: u16, z: u16) -> SUVec3 {
+    SUVec3 { x, y, z }
+}
+
+impl Add<SUVec3> for SUVec3 {
+    type Output = SUVec3;
+
+    fn add(self, rhs: SUVec3) -> Self::Output {
+        SUVec3 {
+            x: self.x + rhs.x,
+            y: self.y + rhs.y,
+            z: self.z + rhs.z,
+        }
+    }
+
+}
+
+impl Zero for SUVec3 {
+    fn zero() -> Self {
+        SUVec3 { x: 0, y: 0, z: 0 }
+    }
+
+    fn is_zero(&self) -> bool {
+        self.x == 0 && self.y == 0 && self.z == 0
+    }
+
+    fn set_zero(&mut self) {
+        *self = Zero::zero();
+    }
+}
+
+pub trait AsSUVec3 {
+    fn as_suvec3(self) -> SUVec3;
+}
+
+impl AsSUVec3 for Vec3 {
+    fn as_suvec3(self) -> SUVec3 {
+        SUVec3 {
+            x: self.x as u16,
+            y: self.y as u16,
+            z: self.z as u16,
+        }
+    }
+}
+
+impl SUVec3 {
+    pub const ZERO: SUVec3 = SUVec3 { x: 0, y: 0, z: 0 };
+    pub fn new(x: u16, y: u16, z: u16) -> SUVec3 {
+        SUVec3 { x, y, z }
+    }
+    pub fn as_vec3(self) -> Vec3 {
+        vec3(self.x as f32, self.y as f32, self.z as f32)
+    }
+}
+
+impl Div<u16> for SUVec3 {
+    type Output = SUVec3;
+
+    fn div(self, rhs: u16) -> Self::Output {
+        SUVec3 {
+            x: self.x / rhs,
+            y: self.y / rhs,
+            z: self.z / rhs,
+        }
+    }
+}
+
+impl Mul<u16> for SUVec3 {
+    type Output = SUVec3;
+
+    fn mul(self, rhs: u16) -> Self::Output {
+        SUVec3 {
+            x: self.x * rhs,
+            y: self.y * rhs,
+            z: self.z * rhs,
+        }
+    }
+}
+
+impl Rem<u16> for SUVec3 {
+    type Output = SUVec3;
+
+    fn rem(self, rhs: u16) -> Self::Output {
+        SUVec3 {
+            x: self.x % rhs,
+            y: self.y % rhs,
+            z: self.z % rhs,
+        }
+    }
 }

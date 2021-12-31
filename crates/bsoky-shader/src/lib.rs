@@ -8,7 +8,7 @@
 #[cfg(not(target_arch = "spirv"))]
 use spirv_std::macros::spirv;
 use spirv_std::num_traits::Float;
-use common_no_std::{math::*, shader::base_uniform::*, svo::Svo};
+use common_no_std::{math::*, shader::base_uniform::*, svo::*};
 use bsoky_no_std::*;
 
 mod ray;
@@ -57,16 +57,15 @@ pub fn frag_world_position_from_face(map_size: Vec3, face: u32, uv: Vec2) -> Vec
 #[spirv(fragment)]
 pub fn fragment(
     #[spirv(uniform, descriptor_set = 0, binding = 0)] view: &ViewUniform,
-    #[spirv(storage_buffer, descriptor_set = 1, binding = 0)] svo: &mut [u32],
+    #[spirv(storage_buffer, descriptor_set = 1, binding = 0)] svo: &mut [usvo],
     #[spirv(flat)] face: u32,
     uv: Vec2,
     output: &mut Vec4,
 ) {
     let svo = MySvo { mem: svo };
-    let total_dim = MySvo::total_dim();
-    let map_size = UVec3::splat(total_dim);
-    let map_size_f = map_size.as_vec3();
-    let frag_world_position = frag_world_position_from_face(from_simulation_coor(map_size_f), face, uv);
+    let total_dim = MySvo::total_dim() as f32;
+    let map_size = Vec3::splat(total_dim);
+    let frag_world_position = frag_world_position_from_face(from_simulation_coor(map_size), face, uv);
 
     //render the distance for debug purposes
     // let distance = (frag_world_position - view.world_position).length();

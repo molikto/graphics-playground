@@ -4122,8 +4122,3 @@ name = "xi-unicode"
 version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a67300977d3dc3f8034dae89778f502b6ba20b269527b3223ba59c0cf393bb8a"
-
-[[patch.unused]]
-name = "bevy"
-version = "0.5.0"
-source = "git+https://github.com/molikto/bevy#225d6a138f8f5be92ef42ce146a76d4c43f60f72"
