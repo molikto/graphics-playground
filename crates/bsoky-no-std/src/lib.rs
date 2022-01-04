@@ -5,7 +5,8 @@ use common_no_std::{*, svo::*};
 pub const BLOCK_DIM: usvo = 2;
 pub const LEVEL_COUNT: usize = 8;
 
-pub type MySvo<'a>  = Svo<'a, BLOCK_DIM, LEVEL_COUNT>;
+pub type MySvo<'a>  = Svo<&'a [usvo], BLOCK_DIM, LEVEL_COUNT>;
+pub type MySvoMut<'a>  = Svo<&'a mut [usvo], BLOCK_DIM, LEVEL_COUNT>;
 
 pub const BLOCK_RENDER_SIZE: f32 = 1.0;//;0.25;
 

@@ -59,7 +59,7 @@ pub fn fragment(
     #[spirv(frag_coord)]
     in_frag_coord: Vec4,
     #[spirv(uniform, descriptor_set = 0, binding = 0)] view: &ViewUniform,
-    #[spirv(storage_buffer, descriptor_set = 1, binding = 0)] svo: &mut [usvo],
+    #[spirv(storage_buffer, descriptor_set = 1, binding = 0)] svo: &[usvo],
     #[spirv(flat)] face: u32,
     uv: Vec2,
     output: &mut Vec4,

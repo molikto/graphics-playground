@@ -82,7 +82,7 @@ impl Material for CustomMaterial {
                 visibility: ShaderStages::FRAGMENT,
                 ty: BindingType::Buffer {
                     ty: BufferBindingType::Storage { 
-                      read_only: false,
+                      read_only: true,
                     },
                     has_dynamic_offset: false,
                     min_binding_size: None,
