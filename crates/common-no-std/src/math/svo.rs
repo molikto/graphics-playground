@@ -1,7 +1,6 @@
 
 
 use core::ops::Deref;
-use core::ops::DerefMut;
 
 use crate::Aabb3;
 
@@ -32,8 +31,9 @@ impl<const BLOCK_DIM: usvo, const LEVEL_COUNT: usize> BlockInfo<BLOCK_DIM, LEVEL
     }
 }
 
+#[repr(transparent)]
 pub struct Svo<REF : Deref<Target = [usvo]>, const BLOCK_DIM: usvo, const LEVEL_COUNT: usize> {
-    pub mem: REF, // each alloc pointer means if a 8 node sequence is vacant
+    pub mem: REF,
 }
 
 
@@ -242,8 +242,13 @@ impl<REF : Deref<Target = [usvo]>, const BLOCK_DIM: usvo, const LEVEL_COUNT: usi
 }
 
 
-impl<REF : DerefMut<Target = [usvo]>, const BLOCK_DIM: usvo, const LEVEL_COUNT: usize> Svo<REF, BLOCK_DIM, LEVEL_COUNT> {
-    pub fn init(mem: REF, material: usvo) -> Self {
+#[cfg(not(target_arch = "spirv"))]
+use std::vec::*;
+
+#[cfg(not(target_arch = "spirv"))]
+impl<const BLOCK_DIM: usvo, const LEVEL_COUNT: usize> Svo<Vec<usvo>, BLOCK_DIM, LEVEL_COUNT> {
+    pub fn init(material: usvo) -> Self {
+        let mem = vec![0; 1];
         let mut svo = Svo { mem };
         // the root pointer is 1, here nothing is allocated, so we set it to 1
         svo.mem[0] = svo.root_block_index() as usvo;
@@ -256,8 +261,12 @@ impl<REF : DerefMut<Target = [usvo]>, const BLOCK_DIM: usvo, const LEVEL_COUNT: 
     }
 
     fn alloc_new_block(&mut self, material: usvo) -> usvo {
-        let cur_top = self.mem[0];
-        self.mem[0] = cur_top + 1;
+        let mut cur_top = self.mem[0];
+        cur_top += 1;
+        self.mem[0] = cur_top;
+        while self.mem.len() < ((cur_top + 1) as usize) * (Self::BLOCK_SIZE as usize) {
+            self.mem.push(0);
+        }
         for i in 0..Self::BLOCK_SIZE {
             self.mem[(cur_top as usize) * (Self::BLOCK_SIZE as usize) + (i as usize)] = Self::new_block(true, material);
         }
@@ -329,11 +338,9 @@ mod tests {
 
     #[test]
     fn simple_image_render() {
-        let mut mem0 = vec![0; 10000];
-        let mem = &mut mem0;
         const BLOCK_DIM: usvo = 2;
         const LEVEL: usize = 2;
-        let mut svo = Svo::<&mut [usvo], BLOCK_DIM, LEVEL>::init(mem, 0);
+        let mut svo = Svo::<Vec<usvo>, BLOCK_DIM, LEVEL>::init(0);
         let TOTAL = BLOCK_DIM.pow(LEVEL as u32);
         // svo.set(Usvo3(0, 0, 0), 1);
         svo.set(Usvo3::new(0, 2, 1), 2);
@@ -371,14 +378,12 @@ mod tests {
         image.save("test_svo_simple.png").unwrap();
     }
 
-    type MySvo<'a> = Svo<&'a mut [usvo], 4, 4>;
+    type MySvo = Svo<Vec<usvo>, 4, 4>;
 
     #[test]
     fn simple_debug() {
         println!("fds");
-        let mut mem0 = vec![0; 1000000];
-        let mem = &mut mem0;
-        let mut svo = MySvo::init(mem, 0);
+        let mut svo = MySvo::init(0);
         let size = (MySvo::total_dim() - 10) as f32;
         let mut rng = rand::thread_rng();
         for i in 0..1000 {
@@ -425,9 +430,7 @@ mod tests {
             )
             .subtract(sdfu::Box::new(Vec3A::new(0.2, 2.0, 0.2)))
             .translate(Vec3A::new(0.5, 0.5, 0.5));
-        let mut mem0 = vec![0; 10000000];
-        let mem = &mut mem0;
-        let mut svo = Svo::<&mut [usvo], 4, 4>::init(mem, 0);
+        let mut svo = Svo::<Vec<usvo>, 4, 4>::init(0);
         let level_count = 4 as usvo;
         let block_size = 4 as usvo;
         let total_size = block_size.pow(level_count as u32) as f32;
