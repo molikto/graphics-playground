@@ -39,6 +39,7 @@ impl SrgbColorSpace for f32 {
 
 #[cfg_attr(not(target_arch = "spirv"), derive(Debug))]
 #[derive(Clone, Copy)]
+#[repr(transparent)]
 pub struct RgbLinear(pub Vec3);
 
 impl RgbLinear {
@@ -66,6 +67,7 @@ impl RgbLinear {
 
 #[cfg_attr(not(target_arch = "spirv"), derive(Debug))]
 #[derive(Clone, Copy)]
+#[repr(transparent)]
 pub struct RgbaLinear(pub Vec4);
 
 impl RgbaLinear {
@@ -94,6 +96,7 @@ impl RgbaLinear {
 
 #[cfg_attr(not(target_arch = "spirv"), derive(Debug))]
 #[derive(Clone, Copy)]
+#[repr(transparent)]
 pub struct Rgb(pub Vec3);
 
 impl Rgb {
@@ -120,6 +123,7 @@ impl Rgb {
 
 #[cfg_attr(not(target_arch = "spirv"), derive(Debug))]
 #[derive(Clone, Copy)]
+#[repr(transparent)]
 pub struct Rgba(pub Vec4);
 
 impl Rgba {
@@ -149,6 +153,7 @@ impl Rgba {
 
 #[cfg_attr(not(target_arch = "spirv"), derive(Debug))]
 #[derive(Clone, Copy)]
+#[repr(transparent)]
 pub struct RgbaLinearPremultiplied(pub Vec4);
 
 impl RgbaLinearPremultiplied {

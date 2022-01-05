@@ -5,3 +5,5 @@ pub use ray::*;
 pub mod aabb;
 pub use aabb::*;
 pub mod svo;
+pub mod srng;
+pub use srng::*;

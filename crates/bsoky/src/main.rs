@@ -130,7 +130,7 @@ fn create_simple_debug_objects(
 fn main() {
     //simulation_benchmark();
     App::new()
-        .insert_resource(Msaa {  samples: 1 })
+        .insert_resource(Msaa {  samples: 4 })
         .insert_resource(WgpuOptions {
             backends: Backends::VULKAN,
             limits: WgpuLimits {

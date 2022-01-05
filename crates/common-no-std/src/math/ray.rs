@@ -26,11 +26,13 @@ impl Add<Vec3> for Ray3 {
   }
 }
 
+/**
+ * nor is always the surface normal
+ */
 #[derive(Default)]
 pub struct HitRecord3 {
     pub is_hit: bool,
     pub t: f32,
-    pub pos: Vec3,
-    pub out: bool,
+    pub from_inside: bool,
     pub nor: Vec3,
 }

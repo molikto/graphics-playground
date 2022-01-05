@@ -56,6 +56,8 @@ pub fn frag_world_position_from_face(map_size: Vec3, face: u32, uv: Vec2) -> Vec
 // A simple vert/frag shader to copy an image to the swapchain.
 #[spirv(fragment)]
 pub fn fragment(
+    #[spirv(frag_coord)]
+    in_frag_coord: Vec4,
     #[spirv(uniform, descriptor_set = 0, binding = 0)] view: &ViewUniform,
     #[spirv(storage_buffer, descriptor_set = 1, binding = 0)] svo: &mut [usvo],
     #[spirv(flat)] face: u32,
@@ -72,6 +74,9 @@ pub fn fragment(
     // *output = Vec3::splat(distance / (total_dim as f32)).extend(1.0);
     // return;
 
+    let seed = in_frag_coord.xy();// + Vec2::splat(constants.rng_seed_offset);
+    let mut rng = SRng { seed };
+
     let mut ray = Ray3 {
         pos: to_simulation_coor(view.world_position),
         dir: to_simulation_coor(frag_world_position - view.world_position)
@@ -80,7 +85,7 @@ pub fn fragment(
     if ray.dir == Vec3::ZERO {
         ray.dir = vec3(1.0, 0.0, 0.0);
     }
-    let env_color = ray::shade_ray(svo, ray);
+    let env_color = ray::shade_ray(&mut rng, svo, ray);
 
     // let color = clamp(env_color, Vec4(0.0), Vec4(1.0));
     // let color = color_over(env_color, Vec4(0.5, 0.5, 0.5, 1.0));

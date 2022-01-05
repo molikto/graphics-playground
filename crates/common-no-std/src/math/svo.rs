@@ -129,16 +129,17 @@ impl<'a, const BLOCK_DIM: usvo, const LEVEL_COUNT: usize> Svo<'a, BLOCK_DIM, LEV
     }
 
     #[inline]
-    pub fn traverse_ray<C>(&self, mut ray: Ray3, mut closure: C) -> u32
+    pub fn traverse_ray<C>(&self, max_count: i32, mut ray: Ray3, mut closure: C) -> i32
     where
-        C: FnMut(BlockInfo<BLOCK_DIM, LEVEL_COUNT>, Vec3) -> bool,
+        C: FnMut(f32, BlockInfo<BLOCK_DIM, LEVEL_COUNT>, Vec3) -> bool,
     {
+        let mut count = 0;
         // TODO there are still cases where it infinite loop..
         // the max dim we can have is 8^8, otherwise it will not work because of floating point issue
         // https://itectec.com/matlab-ref/matlab-function-flintmax-largest-consecutive-integer-in-floating-point-format/
         ray.dir = ray.dir.normalize_or_zero();
         if ray.dir == Vec3::ZERO {
-            return 3;
+            return -3;
         }
         let ray_dir_signum = ray.dir.signum();
         let ray_dir_limit_mul = (ray_dir_signum + 1.0) / 2.0;
@@ -176,18 +177,22 @@ impl<'a, const BLOCK_DIM: usvo, const LEVEL_COUNT: usize> Svo<'a, BLOCK_DIM, LEV
                 if test == 3.0 {
                     break;
                 } else if level == 0 {
-                    return 0;
+                    return count;
                 } else {
                     level -= 1;
                     level_dim_div *= BLOCK_DIM;
                 }
+            }
+            count += 1;
+            if count > max_count {
+                return -1;
             }
             // go inside levels
             let mut level_position_abs: Usvo3;
             let mut index: usvo;
             let position_u = vec3_to_usvo3(position);
             if position_u == position_up {
-                return 4;
+                return -4;
             }
             position_up = position_u;
             loop {
@@ -219,14 +224,14 @@ impl<'a, const BLOCK_DIM: usvo, const LEVEL_COUNT: usize> Svo<'a, BLOCK_DIM, LEV
                 level,
                 data: index,
             };
-            let ret = closure(block_info, mask);
+            let ret = closure(t, block_info, mask);
             if ret {
-                return 0;
+                return count;
             }
             // set mask later, because we want to know the mask of the enter face
             mask = ts.step_f(t) * ray_dir_signum;
             if mask == Vec3::ZERO {
-                return 2;
+                return -2;
             }
 
             // this floating point position is because we use unsigned position_u, it's actually value doesn't mater that much
@@ -341,7 +346,7 @@ mod tests {
                 //     pos: Vec3::new(i as f32 + 0.4, j as f32 + 0.4, 0.1) / (image_size as f32) * (TOTAL as f32),
                 //     dir: Vec3::new(0.1, 0.1, 1.0),
                 // };
-                svo.traverse_ray(ray, |block, hit_mask| {
+                svo.traverse_ray(100, ray, |t_hit, block, hit_mask| {
                     let hit = block.data != 0;
                     if hit {
                         let light_level = vec3(0.6, 0.75, 1.0);
@@ -375,21 +380,16 @@ mod tests {
             svo.set(vec3_to_usvo3(v), i as usvo);
         }
         for i in 0..100000 {
-            let mut count = 0;
-            let error_code = svo.traverse_ray(
+            let error_code = svo.traverse_ray(300,
                 Ray3 {
                     pos: vec3(rng.gen(), rng.gen(), rng.gen()) * size,
                     dir: vec3(rng.gen(), rng.gen(), rng.gen()) * size,
                 },
-                |block, mask| {
-                    count += 1;
-                    if count > 300 {
-                        assert_eq!(0, 1);
-                    }
+                |t_hit, block, mask| {
                     return false;
                 },
             );
-            if error_code != 0 {
+            if error_code < 0 {
                 println!("{}", error_code);
             }
         }
@@ -468,7 +468,7 @@ mod tests {
                     pos: Vec3::new(i as f32, j as f32, 200.0) / 100.0 * 256.0,
                     dir: Vec3::new(0.1, 0.1, -1.0),
                 };
-                svo.traverse_ray(ray, |block, _| {
+                svo.traverse_ray(100, ray, |t_hit, block, _| {
                     hit = block.data == 1;
                     if hit {
                         image.put_pixel(i, j, Rgb([255, 0, 0]));

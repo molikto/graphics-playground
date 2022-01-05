@@ -133,8 +133,7 @@ impl Aabb3 {
                 let point = ray.at(t0);
                 if side.inside(point.omit_axis(a)) {
                     candidate.is_hit = true;
-                    candidate.pos = point;
-                    candidate.out = true;
+                    candidate.from_inside = true;
                     candidate.nor = axis;
                     candidate.t = t0;
                 }
@@ -142,8 +141,7 @@ impl Aabb3 {
                 let point = ray.at(t1);
                 if side.inside(point.omit_axis(a)) {
                     candidate.is_hit = true;
-                    candidate.pos = point;
-                    candidate.out = false;
+                    candidate.from_inside = false;
                     candidate.nor = axis;
                     candidate.t = t1;
                 }
