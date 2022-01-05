@@ -27,13 +27,13 @@ impl Aabb2 {
     }
 
     // pub fn inside(self: &Aabb2, p: Vec2) -> bool {
-    //     p[0] >= self.min[0] && p[0] <= self.max[0] && p[1] >= self.min[1] && p[1] <= self.max[1]
+    //     p.x >= self.min.x && p.x <= self.max.x && p.y >= self.min.y && p.y <= self.max.y
     // }
 
     // TODO these inside function should account for edges
     pub fn inside(self, p: Vec2) -> bool {
         let s = self.min.step(p) - self.max.step(p);
-        return s[0] * s[1] == 1.0;
+        return s.x * s.y == 1.0;
     }
 
     pub fn extend(self: &Self, axis: usize, min: f32, max: f32) -> Aabb3 {
@@ -82,7 +82,7 @@ impl Aabb3 {
 
     pub fn inside(self: &Self, p: Vec3) -> bool {
         let s = self.min.step(p) - self.max.step(p);
-        return s[0] * s[1] * s[2] == 1.0;
+        return s.x * s.y * s.z == 1.0;
     }
 
     pub fn union(a: &Aabb3, b: &Aabb3) -> Aabb3 {
@@ -94,9 +94,9 @@ impl Aabb3 {
 
     pub fn hit_fast(self: &Aabb3, ray: &Ray3, t_min: f32, t_max: f32) -> bool {
         for a in 0..3 {
-            let inv = 1.0 / ray.dir[a];
-            let mut t0 = (self.min[a] - ray.pos[a]) * inv;
-            let mut t1 = (self.max[a] - ray.pos[a]) * inv;
+            let inv = 1.0 / ray.dir.get(a);
+            let mut t0 = (self.min.get(a) - ray.pos.get(a)) * inv;
+            let mut t1 = (self.max.get(a) - ray.pos.get(a)) * inv;
             if inv < 0.0 {
                 let t = t0;
                 t0 = t1;
@@ -115,9 +115,9 @@ impl Aabb3 {
         let mut candidate = HitRecord3::default();
         for a in 0..3 {
             let side = self.omit(a);
-            let inv = 1.0 / ray.dir[a];
-            let mut t0 = (self.min[a] - ray.pos[a]) * inv;
-            let mut t1 = (self.max[a] - ray.pos[a]) * inv;
+            let inv = 1.0 / ray.dir.get(a);
+            let mut t0 = (self.min.get(a) - ray.pos.get(a)) * inv;
+            let mut t1 = (self.max.get(a) - ray.pos.get(a)) * inv;
             let mut axis = -Vec3::new_axis(a);
             if inv < 0.0 {
                 let temp = t0;

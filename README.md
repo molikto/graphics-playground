@@ -9,3 +9,10 @@ my graphics playground in Rust, using:
 ## crates
 
 * `bosky`: svo ray tracing (run with `cargo run -p bosky --release`)
+* `bosky`: svo ray tracing (run with `cargo run -p bosky --release`)
+
+
+## TODO
+
+* fix the pixel bug --- on hold, cannot use RenderDoc
+* create my own render graph, don't use the builtin PBR pipeline

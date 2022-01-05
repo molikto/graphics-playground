@@ -5,6 +5,8 @@ use num_traits::Zero;
 
 
 pub trait VecExt {
+    // TODO CPU version with indexing
+    fn get(self, a: usize) -> f32;
     fn step(self, other: Self) -> Self;
     fn step_f(self, other: f32) -> Self;
     fn sum(self) -> f32;
@@ -33,6 +35,19 @@ impl VecExt for Vec3 {
 
     fn sum(self) -> f32 {
         self.dot(Self::splat(1.0))
+    }
+
+    #[inline]
+    fn get(self, a: usize) -> f32 {
+        return if a == 0 {
+            self.x
+        } else if a == 1 {
+            self.y
+        } else if a == 2 {
+            self.z
+        } else {
+            panic!()
+        }
     }
 
     fn new_axis(a: usize) -> Vec3 {
@@ -77,6 +92,18 @@ impl VecExt for Vec2 {
             panic!()
         }
     }
+    
+    #[inline]
+    fn get(self, a: usize) -> f32 {
+        return if a == 0 {
+            self.x
+        } else if a == 1 {
+            self.y
+        } else {
+            panic!()
+        }
+    }
+
 }
 
 pub trait Vec2Ext {
@@ -87,11 +114,11 @@ impl Vec2Ext for Vec2 {
     #[inline]
     fn extend_axis(self, a: usize, s: f32) -> Vec3 {
         if a == 0 {
-            Vec3::new(s, self[0], self[1])
+            Vec3::new(s, self.x, self.y)
         } else if a == 1 {
-            Vec3::new(self[0], s, self[1])
+            Vec3::new(self.x, s, self.y)
         } else if a == 2 {
-            Vec3::new(self[0], self[1], s)
+            Vec3::new(self.x, self.y, s)
         } else {
             panic!()
         }

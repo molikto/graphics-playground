@@ -28,7 +28,6 @@ fn main() {
         cwd.parent().unwrap().join("bsoky-shader"),
         "spirv-unknown-spv1.5",
     )
-    .capability(spirv_builder::Capability::VariablePointers)
     .capability(spirv_builder::Capability::Int16)
     .print_metadata(MetadataPrintout::Full)
     .build()

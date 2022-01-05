@@ -349,7 +349,7 @@ mod tests {
                         image.put_pixel(
                             i,
                             j,
-                            Rgb([color[0] as u8, color[1] as u8, color[2] as u8]),
+                            Rgb([color.x as u8, color.y as u8, color.z as u8]),
                         );
                     }
                     return hit;
