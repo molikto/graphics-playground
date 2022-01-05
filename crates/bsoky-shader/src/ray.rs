@@ -7,7 +7,7 @@ pub fn shade_ray(svo: Svo<BLOCK_DIM, LEVEL_COUNT>, ray: Ray3) -> Vec3 {
     let error_code = svo.traverse_ray(ray, |info, mask| {
         // debug count
         count += 1;
-        if count > 100 {
+        if count > 400 {
             return true;
         }
         // debug levels

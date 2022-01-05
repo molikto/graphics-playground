@@ -28,4 +28,10 @@ bevy = { git = "https://github.com/molikto/bevy", branch="shader-bypass" }
 [patch."https://github.com/bevyengine/bevy"]
 bevy = { git = "https://github.com/molikto/bevy", branch="shader-bypass" }
 
+[patch."https://github.com/EmbarkStudios/rust-gpu"]
+# spirv-builder = { git= "https://github.com/ElectronicRU/rust-gpu", branch="enums"}
+# spirv-std = { git= "https://github.com/ElectronicRU/rust-gpu", branch="enums"}
+spirv-builder = { path = "..\\rust-gpu\\crates\\spirv-builder" }
+spirv-std = { path = "..\\rust-gpu\\crates\\spirv-std" }
+
 ## bevy 4423a2fa2dc82fad71525ed3f44e16b8481a4902
