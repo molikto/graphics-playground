@@ -34,6 +34,7 @@ pub trait Material {
     fn scatter(self, rng: &mut SRng, ray: Ray3, hit: HitRecord3) -> MaterialInteraction;
 }
 
+
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Lambertian {

@@ -15,6 +15,11 @@ pub fn vec3_to_usvo3(v: Vec3) -> Usvo3 {
     Usvo3::new(v.x as usvo, v.y as usvo, v.z as usvo)
 }
 
+pub struct BlockRayIntersectionInfo {
+    pub mask: Vec3,
+    pub t: f32,
+}
+
 pub struct BlockInfo<const BLOCK_DIM: usvo, const LEVEL_COUNT: usize> {
     pub level_position_abs: Usvo3,
     pub level: usvo,
@@ -54,14 +59,15 @@ impl<'a, const BLOCK_DIM: usvo, const LEVEL_COUNT: usize> Svo<'a, BLOCK_DIM, LEV
         return 1;
     }
 
-
     pub fn block_count(&self) -> usize {
         return self.mem[0] as usize - self.root_block_index();
     }
 
     // in bytes
     pub fn memory_used(&self) -> usize {
-        return (self.block_count() + 1) * if (usvo::MAX as u32) == u32::MAX { 4 } else { 2 } * (Self::BLOCK_SIZE as usize);
+        return (self.block_count() + 1)
+            * if (usvo::MAX as u32) == u32::MAX { 4 } else { 2 }
+            * (Self::BLOCK_SIZE as usize);
     }
 
     // memory ratio assuming each block use a byte of memory.
@@ -75,7 +81,8 @@ impl<'a, const BLOCK_DIM: usvo, const LEVEL_COUNT: usize> Svo<'a, BLOCK_DIM, LEV
         let cur_top = self.mem[0];
         self.mem[0] = cur_top + 1;
         for i in 0..Self::BLOCK_SIZE {
-            self.mem[(cur_top as usize) * (Self::BLOCK_SIZE as usize) + (i as usize)] = Self::new_block(true, material);
+            self.mem[(cur_top as usize) * (Self::BLOCK_SIZE as usize) + (i as usize)] =
+                Self::new_block(true, material);
         }
         return cur_top;
     }
@@ -128,10 +135,32 @@ impl<'a, const BLOCK_DIM: usvo, const LEVEL_COUNT: usize> Svo<'a, BLOCK_DIM, LEV
         return self.level_position_abs(position, level) % BLOCK_DIM;
     }
 
+    pub fn debug_error_code_colors(error_code: i32) -> Vec3 {
+        if error_code == -1 {
+            return vec3(1.0, 0.0, 0.0);
+        } else if error_code == -2 {
+            return vec3(0.0, 1.0, 0.0);
+        } else if error_code == -3 {
+            return vec3(0.0, 0.0, 1.0);
+        } else if error_code == -4 {
+            return vec3(1.0, 0.0, 0.0);
+        } else if error_code == -5 {
+            return vec3(1.0, 0.0, 1.0);
+        } else if error_code == -6 {
+            return vec3(0.0, 1.0, 1.0);
+        } else {
+            panic!();
+        }
+    }
+
     #[inline]
     pub fn traverse_ray<C>(&self, max_count: i32, mut ray: Ray3, mut closure: C) -> i32
     where
-        C: FnMut(f32, BlockInfo<BLOCK_DIM, LEVEL_COUNT>, Vec3) -> bool,
+        C: FnMut(
+            BlockRayIntersectionInfo,
+            BlockRayIntersectionInfo,
+            BlockInfo<BLOCK_DIM, LEVEL_COUNT>,
+        ) -> bool,
     {
         let mut count = 0;
         // TODO there are still cases where it infinite loop..
@@ -143,7 +172,7 @@ impl<'a, const BLOCK_DIM: usvo, const LEVEL_COUNT: usize> Svo<'a, BLOCK_DIM, LEV
         }
         let ray_dir_signum = ray.dir.signum();
         let ray_dir_limit_mul = (ray_dir_signum + 1.0) / 2.0;
-        let total_dim= Self::total_dim();
+        let total_dim = Self::total_dim();
         let total_dim_f = total_dim as f32;
         let aabb = Aabb3::new(Vec3::ZERO, Vec3::splat(total_dim_f));
         let mut mask: Vec3;
@@ -168,7 +197,7 @@ impl<'a, const BLOCK_DIM: usvo, const LEVEL_COUNT: usize> Svo<'a, BLOCK_DIM, LEV
         // block aabbs is terminal block
         let mut level: usvo = 0;
         let mut position_up = Usvo3::ZERO;
-        let mut level_dim_div= total_dim / BLOCK_DIM;
+        let mut level_dim_div = total_dim / BLOCK_DIM;
         loop {
             loop {
                 // exit levels first
@@ -202,17 +231,20 @@ impl<'a, const BLOCK_DIM: usvo, const LEVEL_COUNT: usize> Svo<'a, BLOCK_DIM, LEV
                     block_indexs[level as usize] + Self::encode(level_position);
                 let target_block = self.mem[target_block_index];
                 index = Self::block_index_data(target_block);
-                block_limit = (level_position_abs.as_vec3() + ray_dir_limit_mul) * (level_dim_div as f32);
+                block_limit =
+                    (level_position_abs.as_vec3() + ray_dir_limit_mul) * (level_dim_div as f32);
                 if Self::is_terminal_block(target_block) {
                     break;
                 }
                 level += 1;
                 level_dim_div /= BLOCK_DIM; // must be here or we get 1 / N
                 block_limits[level as usize] = block_limit;
-                block_indexs[level as usize] = index as usize  * (Self::BLOCK_SIZE as usize);
+                block_indexs[level as usize] = index as usize * (Self::BLOCK_SIZE as usize);
             }
             let ts = (block_limit - ray.pos) / ray.dir;
             let ts_min = ts.min_element();
+            let incident_t = t;
+            let incident_mask = mask;
             if ts_min < t {
                 // TODO this fixes some problem of inifinite looping
                 t = t + 0.0001;
@@ -224,15 +256,22 @@ impl<'a, const BLOCK_DIM: usvo, const LEVEL_COUNT: usize> Svo<'a, BLOCK_DIM, LEV
                 level,
                 data: index,
             };
-            let ret = closure(t, block_info, mask);
-            if ret {
-                return count;
-            }
-            // set mask later, because we want to know the mask of the enter face
             mask = ts.step_f(t) * ray_dir_signum;
             if mask == Vec3::ZERO {
                 return -2;
             }
+            let ret = closure(
+                BlockRayIntersectionInfo {
+                    t: incident_t,
+                    mask: incident_mask,
+                },
+                BlockRayIntersectionInfo { t, mask },
+                block_info,
+            );
+            if ret {
+                return count;
+            }
+            // set mask later, because we want to know the mask of the enter face
 
             // this floating point position is because we use unsigned position_u, it's actually value doesn't mater that much
             // we add extra value so we don't step on the boundary. `position = ray.at(t + 0.01)` doesn't work
@@ -242,7 +281,7 @@ impl<'a, const BLOCK_DIM: usvo, const LEVEL_COUNT: usize> Svo<'a, BLOCK_DIM, LEV
 
     pub fn get(&mut self, position: Usvo3) -> usvo {
         let mut level = 0;
-        let mut first_block_index = self.root_block_index()  * (Self::BLOCK_SIZE as usize);
+        let mut first_block_index = self.root_block_index() * (Self::BLOCK_SIZE as usize);
         // get the block at that position, create new blocks if needed
         while level < LEVEL_COUNT as usvo {
             let level_position = self.level_position(position, level);
@@ -279,7 +318,7 @@ impl<'a, const BLOCK_DIM: usvo, const LEVEL_COUNT: usize> Svo<'a, BLOCK_DIM, LEV
                     index = self.alloc_new_block(index);
                     self.mem[target_block_index] = Self::new_block(false, index);
                 }
-                first_block_index = index as usize  * (Self::BLOCK_SIZE as usize);
+                first_block_index = index as usize * (Self::BLOCK_SIZE as usize);
             }
             level += 1;
         }
@@ -346,16 +385,12 @@ mod tests {
                 //     pos: Vec3::new(i as f32 + 0.4, j as f32 + 0.4, 0.1) / (image_size as f32) * (TOTAL as f32),
                 //     dir: Vec3::new(0.1, 0.1, 1.0),
                 // };
-                svo.traverse_ray(100, ray, |t_hit, block, hit_mask| {
+                svo.traverse_ray(100, ray, |_, out_info, block| {
                     let hit = block.data != 0;
                     if hit {
                         let light_level = vec3(0.6, 0.75, 1.0);
-                        let color = vec3(0.3, 0.7, 0.5) * light_level.dot(hit_mask.abs()) * 255.0;
-                        image.put_pixel(
-                            i,
-                            j,
-                            Rgb([color.x as u8, color.y as u8, color.z as u8]),
-                        );
+                        let color = vec3(0.3, 0.7, 0.5) * light_level.dot(out_info.mask.abs()) * 255.0;
+                        image.put_pixel(i, j, Rgb([color.x as u8, color.y as u8, color.z as u8]));
                     }
                     return hit;
                 });
@@ -380,7 +415,8 @@ mod tests {
             svo.set(vec3_to_usvo3(v), i as usvo);
         }
         for i in 0..100000 {
-            let error_code = svo.traverse_ray(300,
+            let error_code = svo.traverse_ray(
+                300,
                 Ray3 {
                     pos: vec3(rng.gen(), rng.gen(), rng.gen()) * size,
                     dir: vec3(rng.gen(), rng.gen(), rng.gen()) * size,
@@ -468,7 +504,7 @@ mod tests {
                     pos: Vec3::new(i as f32, j as f32, 200.0) / 100.0 * 256.0,
                     dir: Vec3::new(0.1, 0.1, -1.0),
                 };
-                svo.traverse_ray(100, ray, |t_hit, block, _| {
+                svo.traverse_ray(100, ray, |_, _, block| {
                     hit = block.data == 1;
                     if hit {
                         image.put_pixel(i, j, Rgb([255, 0, 0]));

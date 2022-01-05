@@ -36,7 +36,7 @@ fn debug_create_rsvo(mem: &mut Box<[usvo]>) {
     let mut svo = MySvo::init(mem, 0);
     // download yourself here https://github.com/ephtracy/voxel-model/blob/master/svo/
     let rsvo = std::fs::read( Path::new(env!("CARGO_MANIFEST_DIR")).join("sibenik_8k.rsvo")).unwrap();
-    // load_rsvo::load_rsvo(&rsvo, &mut svo);
+    //load_rsvo::load_rsvo(&rsvo, &mut svo);
     println!("rsvo size: {}, svo size {}, ratio: {}", rsvo.len(), svo.memory_used(), svo.memory_ratio());
 }
 
@@ -152,7 +152,7 @@ fn main() {
             ..Default::default()
         })
         .insert_resource(bevy_common::camera::CameraSetupParameter {
-            position: Vec3::splat((BLOCK_DIM.pow(LEVEL_COUNT as u32) / 2) as f32),
+            position: Vec3::splat((MySvo::total_dim() / 2) as f32),
         })
         .add_plugin(bevy_common::camera::PlayerPlugin)
         .add_plugin(LogDiagnosticsPlugin {

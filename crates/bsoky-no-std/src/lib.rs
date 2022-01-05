@@ -2,8 +2,8 @@
 
 use common_no_std::{*, svo::*};
 
-pub const BLOCK_DIM: usvo = 2;
-pub const LEVEL_COUNT: usize = 8;
+pub const BLOCK_DIM: usvo = 4;
+pub const LEVEL_COUNT: usize = 3;
 
 pub type MySvo<'a>  = Svo<'a, BLOCK_DIM, LEVEL_COUNT>;
 
