@@ -17,10 +17,10 @@ pub fn shade_ray(rng: &mut SRng, svo: Svo<BLOCK_DIM, LEVEL_COUNT>, mut current_r
     for _ in 0..MAX_RAY_DEPTH {
         let mut final_in_info: BlockRayIntersectionInfo = BlockRayIntersectionInfo {
             mask: Vec3::ZERO,
-            t: 0.00001
+            t: -1.0
         };
         let error_code = svo.traverse_ray(100, current_ray, |in_info, _, info| {
-            if info.data == 1 {
+            if info.data != 0 {
                 final_in_info = in_info;
                 return true;
             } else {
@@ -41,7 +41,7 @@ pub fn shade_ray(rng: &mut SRng, svo: Svo<BLOCK_DIM, LEVEL_COUNT>, mut current_r
             // return vec3( 0.8,0.7, 0.5) * (light_level.dot(hit_mask.abs()));
 
             // no hit, use sky box color
-            if final_in_info.mask == Vec3::ZERO {
+            if final_in_info.t == -1.0 {
                 return accumulate_attenuation * skybox0(&current_ray);
             } else {
                 let interaction = material.scatter(

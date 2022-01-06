@@ -1,7 +1,7 @@
 use std::{
     default, fs,
     path::{Path, PathBuf},
-    time::Duration,
+    time::Duration, sync::Arc,
 };
 
 use bevy::{
@@ -23,7 +23,7 @@ use bevy::{
 pub mod env_render;
 pub mod load_rsvo;
 use bevy_common::{RevertBox, create_debug_cube, MovementSettings};
-use bsoky_no_std::{BLOCK_DIM, LEVEL_COUNT, MySvo};
+use bsoky_no_std::{BLOCK_DIM, LEVEL_COUNT, MySvoMut};
 use common::math::svo::*;
 use common::math::*;
 
@@ -32,24 +32,26 @@ use sdfu::{SDF};
 
 
 
-fn debug_create_rsvo(mem: &mut Box<[usvo]>) {
-    let mut svo = MySvo::init(mem, 0);
+fn debug_create_rsvo() -> MySvoMut {
+    let mut svo = MySvoMut::init(0);
     // download yourself here https://github.com/ephtracy/voxel-model/blob/master/svo/
     let rsvo = std::fs::read( Path::new(env!("CARGO_MANIFEST_DIR")).join("sibenik_8k.rsvo")).unwrap();
     //load_rsvo::load_rsvo(&rsvo, &mut svo);
     println!("rsvo size: {}, svo size {}, ratio: {}", rsvo.len(), svo.memory_used(), svo.memory_ratio());
+    svo
 }
 
-fn debug_create1(mem: &mut Box<[usvo]>) {
-    let mut svo = MySvo::init(mem, 0);
+fn debug_create1() -> MySvoMut {
+    let mut svo = MySvoMut::init(0);
     svo.set(Usvo3::new(3, 3, 3), 1);
     //println!("{:?}", svo.debug_items());
-    println!("{:?}", mem[0..10].to_vec());
+    //println!("{:?}", mem[0..10].to_vec());
+    svo
 }
-fn debug_create_sdf(mem: &mut Box<[usvo]>) {
+fn debug_create_sdf() -> MySvoMut {
     // 4,4 = 0.21
     // 2,8 = 0.11
-    let mut svo = MySvo::init(mem, 0);
+    let mut svo = MySvoMut::init(0);
     let sdf = sdfu::Sphere::new(0.45)
         .subtract(sdfu::Box::new(Vec3A::new(0.25, 0.25, 1.5)))
         .union_smooth(
@@ -70,7 +72,7 @@ fn debug_create_sdf(mem: &mut Box<[usvo]>) {
         .subtract(sdfu::Box::new(Vec3A::new(0.2, 2.0, 0.2)))
         .scale(0.5)
         .translate(Vec3A::new(0.5, 0.5, 0.5));
-    let total_size = MySvo::total_dim() as f32;
+    let total_size = MySvoMut::total_dim() as f32;
     for level in 0..LEVEL_COUNT as usvo {
         let level_cap = level + 1;
         let level_dim = BLOCK_DIM.pow(level_cap as u32);
@@ -107,7 +109,9 @@ fn debug_create_sdf(mem: &mut Box<[usvo]>) {
             }
         }
     }
-    println!("total dim {} block count {}, memory used {}", MySvo::total_dim(), svo.block_count(), svo.memory_used());
+    println!("checksum {}, capacity {}", svo.checksum(), svo.capacity());
+    println!("total dim {} block count {}, memory used {}", MySvoMut::total_dim(), svo.block_count(), svo.memory_used());
+    svo
 }
 
 fn create_simple_debug_objects(
@@ -115,11 +119,10 @@ fn create_simple_debug_objects(
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<CustomMaterial>>,
 ) {
-    let mut mem = vec![0 as usvo; 3800000000].into_boxed_slice();
-    debug_create_sdf(&mut mem);
-    let total_size = MySvo::total_dim() as f32;
+    let svo = debug_create_sdf();
+    let total_size = MySvoMut::total_dim() as f32;
     let mesh = meshes.add(RevertBox::zero_with_size(Vec3::splat(total_size)).into());
-    let material = materials.add(CustomMaterial { svo: mem });
+    let material = materials.add(CustomMaterial { svo });
     commands.spawn_bundle(MaterialMeshBundle::<CustomMaterial> {
         mesh,
         material,
@@ -152,7 +155,7 @@ fn main() {
             ..Default::default()
         })
         .insert_resource(bevy_common::camera::CameraSetupParameter {
-            position: Vec3::splat((MySvo::total_dim() / 2) as f32),
+            position: Vec3::splat((MySvoMut::total_dim() / 2) as f32),
         })
         .add_plugin(bevy_common::camera::PlayerPlugin)
         .add_plugin(LogDiagnosticsPlugin {

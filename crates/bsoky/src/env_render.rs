@@ -1,4 +1,4 @@
-use std::path::Path;
+use std::{path::Path, sync::Arc};
 
 use bevy::{
   ecs::system::{lifetimeless::SRes, SystemParamItem},
@@ -7,20 +7,23 @@ use bevy::{
   reflect::TypeUuid,
   render::{
       render_asset::{PrepareAssetError, RenderAsset},
-      render_resource::{
-          std140::{AsStd140, Std140},
-          *,
-      },
-      renderer::RenderDevice,
+      renderer::RenderDevice, render_resource::*,
   },
 };
+use bsoky_no_std::MySvoMut;
 use common::math::svo::usvo;
 
 
-#[derive(Debug, Clone, TypeUuid)]
+#[derive(TypeUuid)]
 #[uuid = "4ee9c363-1124-4113-890e-199d81b00281"]
 pub struct CustomMaterial {
-    pub svo: Box<[usvo]>,
+    pub svo: MySvoMut
+}
+
+#[derive(Clone, TypeUuid)]
+#[uuid = "4ee9c363-1124-4113-890e-199d81b00281"]
+pub struct ExtractedCustomMaterial {
+    pub svo: Vec<usvo>
 }
 
 #[derive(Clone)]
@@ -30,18 +33,20 @@ pub struct GpuCustomMaterial {
 }
 
 impl RenderAsset for CustomMaterial {
-    type ExtractedAsset = CustomMaterial;
+    type ExtractedAsset = ExtractedCustomMaterial;
     type PreparedAsset = GpuCustomMaterial;
     type Param = (SRes<RenderDevice>, SRes<MaterialPipeline<Self>>);
     fn extract_asset(&self) -> Self::ExtractedAsset {
-        self.clone()
+        ExtractedCustomMaterial {
+            svo: self.svo.mem.clone()
+        }
     }
 
     fn prepare_asset(
         extracted_asset: Self::ExtractedAsset,
         (render_device, material_pipeline): &mut SystemParamItem<Self::Param>,
     ) -> Result<Self::PreparedAsset, PrepareAssetError<Self::ExtractedAsset>> {
-        let contents: &[u8] = unsafe { std::mem::transmute(extracted_asset.svo.as_ref()) };
+        let contents: &[u8] = unsafe { extracted_asset.svo.as_slice().align_to::<u8>().1 };
         let buffer = render_device.create_buffer_with_data(&BufferInitDescriptor {
             contents,
             label: None,
@@ -82,7 +87,7 @@ impl Material for CustomMaterial {
                 visibility: ShaderStages::FRAGMENT,
                 ty: BindingType::Buffer {
                     ty: BufferBindingType::Storage { 
-                      read_only: false,
+                      read_only: true,
                     },
                     has_dynamic_offset: false,
                     min_binding_size: None,

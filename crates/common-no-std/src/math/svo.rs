@@ -1,3 +1,7 @@
+
+
+use core::ops::Deref;
+
 use crate::Aabb3;
 
 use super::ray::*;
@@ -32,26 +36,21 @@ impl<const BLOCK_DIM: usvo, const LEVEL_COUNT: usize> BlockInfo<BLOCK_DIM, LEVEL
     }
 }
 
+// A TOTAL HACK!!! duplicate code because of rust-gpu bug
+
+
+#[cfg(target_arch = "spirv")]
 pub struct Svo<'a, const BLOCK_DIM: usvo, const LEVEL_COUNT: usize> {
-    pub mem: &'a mut [usvo], // each alloc pointer means if a 8 node sequence is vacant
+    pub mem: &'a [usvo],
 }
 
+
+
+#[cfg(target_arch = "spirv")]
 impl<'a, const BLOCK_DIM: usvo, const LEVEL_COUNT: usize> Svo<'a, BLOCK_DIM, LEVEL_COUNT> {
     const BLOCK_SIZE: usvo = BLOCK_DIM * BLOCK_DIM * BLOCK_DIM;
-    //
-    // memory management
-    //
-
     pub fn total_dim() -> usvo {
         BLOCK_DIM.pow(LEVEL_COUNT as u32)
-    }
-
-    pub fn init(mem: &'a mut [usvo], material: usvo) -> Self {
-        let mut svo = Svo { mem };
-        // the root pointer is 1, here nothing is allocated, so we set it to 1
-        svo.mem[0] = svo.root_block_index() as usvo;
-        svo.alloc_new_block(material);
-        return svo;
     }
 
     // TODO memory allocation
@@ -63,11 +62,13 @@ impl<'a, const BLOCK_DIM: usvo, const LEVEL_COUNT: usize> Svo<'a, BLOCK_DIM, LEV
         return self.mem[0] as usize - self.root_block_index();
     }
 
+    pub fn usvo_used(&self) -> usize {
+        return (self.block_count() + 1) * (Self::BLOCK_SIZE as usize);
+    }
+
     // in bytes
     pub fn memory_used(&self) -> usize {
-        return (self.block_count() + 1)
-            * if (usvo::MAX as u32) == u32::MAX { 4 } else { 2 }
-            * (Self::BLOCK_SIZE as usize);
+        return self.usvo_used() * if (usvo::MAX as u32) == u32::MAX { 4 } else { 2 };
     }
 
     // memory ratio assuming each block use a byte of memory.
@@ -75,16 +76,6 @@ impl<'a, const BLOCK_DIM: usvo, const LEVEL_COUNT: usize> Svo<'a, BLOCK_DIM, LEV
         let size = self.memory_used();
         let native_size = (BLOCK_DIM.pow(LEVEL_COUNT as u32)).pow(3);
         return size as f32 / (native_size as f32);
-    }
-
-    fn alloc_new_block(&mut self, material: usvo) -> usvo {
-        let cur_top = self.mem[0];
-        self.mem[0] = cur_top + 1;
-        for i in 0..Self::BLOCK_SIZE {
-            self.mem[(cur_top as usize) * (Self::BLOCK_SIZE as usize) + (i as usize)] =
-                Self::new_block(true, material);
-        }
-        return cur_top;
     }
 
     //
@@ -115,14 +106,6 @@ impl<'a, const BLOCK_DIM: usvo, const LEVEL_COUNT: usize> Svo<'a, BLOCK_DIM, LEV
         } else {
             return index << (1 as usvo) | (1 as usvo);
         }
-    }
-
-    //
-    // modification API
-    //
-
-    fn remove_blocks_at_index(&mut self, index: usize) {
-        // TODO remove unused blocks
     }
 
     #[inline]
@@ -279,7 +262,7 @@ impl<'a, const BLOCK_DIM: usvo, const LEVEL_COUNT: usize> Svo<'a, BLOCK_DIM, LEV
         }
     }
 
-    pub fn get(&mut self, position: Usvo3) -> usvo {
+    pub fn get(&self, position: Usvo3) -> usvo {
         let mut level = 0;
         let mut first_block_index = self.root_block_index() * (Self::BLOCK_SIZE as usize);
         // get the block at that position, create new blocks if needed
@@ -296,6 +279,306 @@ impl<'a, const BLOCK_DIM: usvo, const LEVEL_COUNT: usize> Svo<'a, BLOCK_DIM, LEV
         }
         panic!("not allowed to be here");
     }
+}
+
+
+
+/// END HACK
+
+#[cfg(not(target_arch = "spirv"))]
+#[repr(transparent)]
+pub struct Svo<REF : Deref<Target = [usvo]>, const BLOCK_DIM: usvo, const LEVEL_COUNT: usize> {
+    pub mem: REF,
+}
+
+
+
+#[cfg(not(target_arch = "spirv"))]
+impl<REF : Deref<Target = [usvo]>, const BLOCK_DIM: usvo, const LEVEL_COUNT: usize> Svo<REF, BLOCK_DIM, LEVEL_COUNT> {
+    const BLOCK_SIZE: usvo = BLOCK_DIM * BLOCK_DIM * BLOCK_DIM;
+
+    pub fn total_dim() -> usvo {
+        BLOCK_DIM.pow(LEVEL_COUNT as u32)
+    }
+
+    // TODO memory allocation
+    pub fn root_block_index(&self) -> usize {
+        return 1;
+    }
+
+    pub fn block_count(&self) -> usize {
+        return self.mem[0] as usize - self.root_block_index();
+    }
+
+    pub fn usvo_used(&self) -> usize {
+        return (self.block_count() + 1) * (Self::BLOCK_SIZE as usize);
+    }
+
+    // in bytes
+    pub fn memory_used(&self) -> usize {
+        return self.usvo_used() * if (usvo::MAX as u32) == u32::MAX { 4 } else { 2 };
+    }
+
+    // memory ratio assuming each block use a byte of memory.
+    pub fn memory_ratio(&self) -> f32 {
+        let size = self.memory_used();
+        let native_size = (BLOCK_DIM.pow(LEVEL_COUNT as u32)).pow(3);
+        return size as f32 / (native_size as f32);
+    }
+
+    //
+    // helpers
+    //
+
+    #[inline]
+    pub fn encode(v: Usvo3) -> usize {
+        return (v.x * BLOCK_DIM * BLOCK_DIM + v.y * BLOCK_DIM + v.z) as usize;
+    }
+
+    //
+    // block API
+    #[inline]
+    pub fn is_terminal_block(u: usvo) -> bool {
+        u % (2 as usvo) == (0 as usvo)
+    }
+
+    #[inline]
+    pub fn block_index_data(u: usvo) -> usvo {
+        u >> 1u32
+    }
+
+    #[inline]
+    fn new_block(terminal: bool, index: usvo) -> usvo {
+        if terminal {
+            return index << (1 as usvo);
+        } else {
+            return index << (1 as usvo) | (1 as usvo);
+        }
+    }
+
+    #[inline]
+    pub fn level_position_abs(&self, position: Usvo3, level: usvo) -> Usvo3 {
+        return position / (BLOCK_DIM.pow(LEVEL_COUNT as u32 - 1 - (level as u32)));
+    }
+
+    #[inline]
+    pub fn level_position(&self, position: Usvo3, level: usvo) -> Usvo3 {
+        return self.level_position_abs(position, level) % BLOCK_DIM;
+    }
+
+    pub fn debug_error_code_colors(error_code: i32) -> Vec3 {
+        if error_code == -1 {
+            return vec3(1.0, 0.0, 0.0);
+        } else if error_code == -2 {
+            return vec3(0.0, 1.0, 0.0);
+        } else if error_code == -3 {
+            return vec3(0.0, 0.0, 1.0);
+        } else if error_code == -4 {
+            return vec3(1.0, 0.0, 0.0);
+        } else if error_code == -5 {
+            return vec3(1.0, 0.0, 1.0);
+        } else if error_code == -6 {
+            return vec3(0.0, 1.0, 1.0);
+        } else {
+            panic!();
+        }
+    }
+
+    #[inline]
+    pub fn traverse_ray<C>(&self, max_count: i32, mut ray: Ray3, mut closure: C) -> i32
+    where
+        C: FnMut(
+            BlockRayIntersectionInfo,
+            BlockRayIntersectionInfo,
+            BlockInfo<BLOCK_DIM, LEVEL_COUNT>,
+        ) -> bool,
+    {
+        let mut count = 0;
+        // TODO there are still cases where it infinite loop..
+        // the max dim we can have is 8^8, otherwise it will not work because of floating point issue
+        // https://itectec.com/matlab-ref/matlab-function-flintmax-largest-consecutive-integer-in-floating-point-format/
+        ray.dir = ray.dir.normalize_or_zero();
+        if ray.dir == Vec3::ZERO {
+            return -3;
+        }
+        let ray_dir_signum = ray.dir.signum();
+        let ray_dir_limit_mul = (ray_dir_signum + 1.0) / 2.0;
+        let total_dim = Self::total_dim();
+        let total_dim_f = total_dim as f32;
+        let aabb = Aabb3::new(Vec3::ZERO, Vec3::splat(total_dim_f));
+        let mut mask: Vec3;
+        let mut position: Vec3;
+        if aabb.inside(ray.pos) {
+            mask = Vec3::ZERO;
+            position = ray.pos;
+        } else {
+            let hit = aabb.hit(&ray, 0.0, 100000000000.0);
+            mask = hit.nor;
+            position = ray.at(hit.t + 0.0001);
+        }
+        let mut t = 0 as f32;
+        let mut block_indexs = [0usize; LEVEL_COUNT];
+        block_indexs[0] = self.root_block_index() * (Self::BLOCK_SIZE as usize);
+
+        let mut block_limits = [Vec3::ZERO; LEVEL_COUNT];
+        block_limits[0] = ray_dir_limit_mul * total_dim_f;
+        // there is a off by one error...
+        let mut block_limit: Vec3;
+        //
+        // block aabbs is terminal block
+        let mut level: usvo = 0;
+        let mut position_up = Usvo3::ZERO;
+        let mut level_dim_div = total_dim / BLOCK_DIM;
+        loop {
+            loop {
+                // exit levels first
+                let block_limit = block_limits[level as usize];
+                let test = ((block_limit - position).signum() * ray_dir_signum).sum();
+                if test == 3.0 {
+                    break;
+                } else if level == 0 {
+                    return count;
+                } else {
+                    level -= 1;
+                    level_dim_div *= BLOCK_DIM;
+                }
+            }
+            count += 1;
+            if count > max_count {
+                return -1;
+            }
+            // go inside levels
+            let mut level_position_abs: Usvo3;
+            let mut index: usvo;
+            let position_u = vec3_to_usvo3(position);
+            if position_u == position_up {
+                return -4;
+            }
+            position_up = position_u;
+            loop {
+                level_position_abs = position_u / level_dim_div;
+                let level_position = level_position_abs % BLOCK_DIM;
+                let target_block_index =
+                    block_indexs[level as usize] + Self::encode(level_position);
+                let target_block = self.mem[target_block_index];
+                index = Self::block_index_data(target_block);
+                block_limit =
+                    (level_position_abs.as_vec3() + ray_dir_limit_mul) * (level_dim_div as f32);
+                if Self::is_terminal_block(target_block) {
+                    break;
+                }
+                level += 1;
+                level_dim_div /= BLOCK_DIM; // must be here or we get 1 / N
+                block_limits[level as usize] = block_limit;
+                block_indexs[level as usize] = index as usize * (Self::BLOCK_SIZE as usize);
+            }
+            let ts = (block_limit - ray.pos) / ray.dir;
+            let ts_min = ts.min_element();
+            let incident_t = t;
+            let incident_mask = mask;
+            if ts_min < t {
+                // TODO this fixes some problem of inifinite looping
+                t = t + 0.0001;
+            } else {
+                t = ts_min;
+            }
+            let block_info = BlockInfo {
+                level_position_abs,
+                level,
+                data: index,
+            };
+            mask = ts.step_f(t) * ray_dir_signum;
+            if mask == Vec3::ZERO {
+                return -2;
+            }
+            let ret = closure(
+                BlockRayIntersectionInfo {
+                    t: incident_t,
+                    mask: incident_mask,
+                },
+                BlockRayIntersectionInfo { t, mask },
+                block_info,
+            );
+            if ret {
+                return count;
+            }
+            // set mask later, because we want to know the mask of the enter face
+
+            // this floating point position is because we use unsigned position_u, it's actually value doesn't mater that much
+            // we add extra value so we don't step on the boundary. `position = ray.at(t + 0.01)` doesn't work
+            position = ray.at(t) + mask / 2.0;
+        }
+    }
+
+    pub fn get(&self, position: Usvo3) -> usvo {
+        let mut level = 0;
+        let mut first_block_index = self.root_block_index() * (Self::BLOCK_SIZE as usize);
+        // get the block at that position, create new blocks if needed
+        while level < LEVEL_COUNT as usvo {
+            let level_position = self.level_position(position, level);
+            let target_block_index = first_block_index + Self::encode(level_position);
+            let target_block = self.mem[target_block_index];
+            let index = Self::block_index_data(target_block);
+            if Self::is_terminal_block(target_block) {
+                return index;
+            }
+            first_block_index = index as usize * (Self::BLOCK_SIZE as usize);
+            level += 1;
+        }
+        panic!("not allowed to be here");
+    }
+}
+
+
+#[cfg(not(target_arch = "spirv"))]
+use std::{
+    vec::*,
+    hash::{Hash, Hasher},
+    collections::hash_map::DefaultHasher
+};
+
+
+#[cfg(not(target_arch = "spirv"))]
+impl<const BLOCK_DIM: usvo, const LEVEL_COUNT: usize> Svo<Vec<usvo>, BLOCK_DIM, LEVEL_COUNT> {
+    pub fn init(material: usvo) -> Self {
+        let mem = vec![0; (Self::BLOCK_SIZE as usize) * 10];
+        let mut svo = Svo { mem };
+        // the root pointer is 1, here nothing is allocated, so we set it to 1
+        svo.mem[0] = svo.root_block_index() as usvo;
+        svo.alloc_new_block(material);
+        return svo;
+    }
+
+    pub fn capacity(&self) -> usize {
+        self.mem.capacity()
+    }
+
+    pub fn checksum(&self) -> u64 {
+        let mut hasher = DefaultHasher::new();
+        let usvo_used =  self.usvo_used();
+        for i in 0..usvo_used {
+            hasher.write_u16(self.mem[i]);
+        }
+        hasher.finish()
+    }
+
+    fn remove_blocks_at_index(&mut self, index: usize) {
+        // TODO remove unused blocks
+    }
+
+    fn alloc_new_block(&mut self, material: usvo) -> usvo {
+        let cur_top = self.mem[0];
+        self.mem[0] = cur_top + 1;
+        // here we need to allocate extra block, some padding issues...
+        while self.mem.len() < ((cur_top + 1) as usize) * (Self::BLOCK_SIZE as usize) {
+            self.mem.push(material);
+        }
+        for i in 0..Self::BLOCK_SIZE {
+            self.mem[(cur_top as usize) * (Self::BLOCK_SIZE as usize) + (i as usize)] = Self::new_block(true, material);
+        }
+        return cur_top;
+    }
+
 
     // the position is a "representative" position
     pub fn set_with_level_cap(&mut self, level_cap: usvo, position: Usvo3, material: usvo) {
@@ -361,11 +644,9 @@ mod tests {
 
     #[test]
     fn simple_image_render() {
-        let mut mem0 = vec![0; 10000];
-        let mem = &mut mem0;
         const BLOCK_DIM: usvo = 2;
         const LEVEL: usize = 2;
-        let mut svo = Svo::<BLOCK_DIM, LEVEL>::init(mem, 0);
+        let mut svo = Svo::<Vec<usvo>, BLOCK_DIM, LEVEL>::init(0);
         let TOTAL = BLOCK_DIM.pow(LEVEL as u32);
         // svo.set(Usvo3(0, 0, 0), 1);
         svo.set(Usvo3::new(0, 2, 1), 2);
@@ -399,14 +680,12 @@ mod tests {
         image.save("test_svo_simple.png").unwrap();
     }
 
-    type MySvo<'a> = Svo<'a, 4, 4>;
+    type MySvo = Svo<Vec<usvo>, 4, 4>;
 
     #[test]
     fn simple_debug() {
         println!("fds");
-        let mut mem0 = vec![0; 1000000];
-        let mem = &mut mem0;
-        let mut svo = MySvo::init(mem, 0);
+        let mut svo = MySvo::init(0);
         let size = (MySvo::total_dim() - 10) as f32;
         let mut rng = rand::thread_rng();
         for i in 0..1000 {
@@ -454,9 +733,7 @@ mod tests {
             )
             .subtract(sdfu::Box::new(Vec3A::new(0.2, 2.0, 0.2)))
             .translate(Vec3A::new(0.5, 0.5, 0.5));
-        let mut mem0 = vec![0; 10000000];
-        let mem = &mut mem0;
-        let mut svo = Svo::<4, 4>::init(mem, 0);
+        let mut svo = Svo::<Vec<usvo>, 4, 4>::init(0);
         let level_count = 4 as usvo;
         let block_size = 4 as usvo;
         let total_size = block_size.pow(level_count as u32) as f32;

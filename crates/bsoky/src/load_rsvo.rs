@@ -1,9 +1,8 @@
-use bevy::math::UVec3;
 use common::math::svo::*;
 
 pub fn load_rsvo_rec<const LEVEL_COUNT: usize>(
     rsvo: &[u8],
-    mem: &mut Svo<2, LEVEL_COUNT>,
+    mem: &mut Svo<Vec<usvo>, 2, LEVEL_COUNT>,
     indexes: &mut [usize; LEVEL_COUNT],
     level: usize,
     position: Usvo3,
@@ -27,7 +26,9 @@ pub fn load_rsvo_rec<const LEVEL_COUNT: usize>(
     }
 }
 
-pub fn load_rsvo<const LEVEL_COUNT: usize>(rsvo: &[u8], svo: &mut Svo<2, LEVEL_COUNT>) {
+pub fn load_rsvo<const LEVEL_COUNT: usize>(rsvo: &[u8]) -> Svo<Vec<usvo>, 2, LEVEL_COUNT> {
+    let mut svo: Svo<Vec<usvo>, 2, LEVEL_COUNT> = Svo::init(0);
+    // TODO fix this transmute
     let rsvo32 = unsafe { std::mem::transmute::<&[u8], &[u32]>(rsvo) };
     let level_count = rsvo32[4] as usize;
     if level_count != LEVEL_COUNT {
@@ -38,5 +39,6 @@ pub fn load_rsvo<const LEVEL_COUNT: usize>(rsvo: &[u8], svo: &mut Svo<2, LEVEL_C
     for i in 1..level_count {
         indexes[i] = indexes[i - 1] + rsvo32[i + 4] as usize;
     }
-    load_rsvo_rec(rsvo, svo, &mut indexes, 0, Usvo3::new(0, 0, 0));
+    load_rsvo_rec(rsvo, &mut svo, &mut indexes, 0, Usvo3::new(0, 0, 0));
+    svo
 }

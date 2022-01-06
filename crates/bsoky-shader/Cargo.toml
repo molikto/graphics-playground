@@ -6,6 +6,9 @@ edition = "2021"
 [lib]
 crate-type = ["dylib"]
 
+[build]
+target = "spirv-unknown-spv1.5"
+
 [dependencies]
 spirv-std = { git = "https://github.com/EmbarkStudios/rust-gpu/", features = [
     "glam",
