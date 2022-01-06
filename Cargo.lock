@@ -238,7 +238,7 @@ dependencies = [
 [[package]]
 name = "bevy-crevice-derive"
 version = "0.5.0"
-source = "git+https://github.com/bevyengine/bevy?branch=main#a1e3c5c1001b06d23195cd94c8ae7b524c992c4c"
+source = "git+https://github.com/bevyengine/bevy?branch=main#507441d96f83355cdab578d85f804f4bf8d835c9"
 dependencies = [
  "bevy_macro_utils 0.5.0 (git+https://github.com/bevyengine/bevy?branch=main)",
  "proc-macro2",
@@ -366,7 +366,7 @@ dependencies = [
 [[package]]
 name = "bevy_crevice"
 version = "0.5.0"
-source = "git+https://github.com/bevyengine/bevy?branch=main#a1e3c5c1001b06d23195cd94c8ae7b524c992c4c"
+source = "git+https://github.com/bevyengine/bevy?branch=main#507441d96f83355cdab578d85f804f4bf8d835c9"
 dependencies = [
  "bevy-crevice-derive 0.5.0 (git+https://github.com/bevyengine/bevy?branch=main)",
  "bytemuck",
@@ -547,7 +547,7 @@ dependencies = [
 [[package]]
 name = "bevy_macro_utils"
 version = "0.5.0"
-source = "git+https://github.com/bevyengine/bevy?branch=main#a1e3c5c1001b06d23195cd94c8ae7b524c992c4c"
+source = "git+https://github.com/bevyengine/bevy?branch=main#507441d96f83355cdab578d85f804f4bf8d835c9"
 dependencies = [
  "cargo-manifest",
  "quote",
@@ -934,9 +934,9 @@ dependencies = [
 
 [[package]]
 name = "bumpalo"
-version = "3.8.0"
+version = "3.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8f1e260c3a9040a7c19a12468758f4c16f31a81a1fe087482be9570ec864bb6c"
+checksum = "fe438c9d2f2b0fb88a112154ed81e30b0a491c29322afe1db3b6eec5811f5ba0"
 
 [[package]]
 name = "bytemuck"
@@ -1684,9 +1684,9 @@ checksum = "00b0228411908ca8685dba7fc2cdd70ec9990a6e753e89b6ac91a84c40fbaf4b"
 
 [[package]]
 name = "fsevent-sys"
-version = "4.0.0"
+version = "4.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5c0e564d24da983c053beff1bb7178e237501206840a3e6bf4e267b9e8ae734a"
+checksum = "76ee7a02da4d231650c7cea31349b889be2f45ddb3ef3032d2ec8185f6313fd2"
 dependencies = [
  "libc",
 ]
@@ -2794,9 +2794,9 @@ checksum = "da32515d9f6e6e489d7bc9d84c71b060db7247dc035bbe44eac88cf87486d8d5"
 
 [[package]]
 name = "ordered-float"
-version = "2.9.0"
+version = "2.10.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8aa3d135650b150c29f0c3e385896f9d3ceb42d2d87b02f0d7a8cbd0fc7e19a6"
+checksum = "7940cf2ca942593318d07fcf2596cdca60a85c9e7fab408a5e21a4f9dcd40d87"
 dependencies = [
  "num-traits",
 ]
@@ -3229,6 +3229,7 @@ checksum = "08d43f7aa6b08d49f382cde6a7982047c3426db949b1424bc4b7ec9ae12c6ce2"
 [[package]]
 name = "rustc_codegen_spirv"
 version = "0.4.0-alpha.12"
+source = "git+https://github.com/EmbarkStudios/rust-gpu/#b99fc516e61f6aaf41ad9d58e29edf14d7f3121e"
 dependencies = [
  "ar",
  "bimap",
@@ -3431,6 +3432,7 @@ dependencies = [
 [[package]]
 name = "spirv-builder"
 version = "0.4.0-alpha.12"
+source = "git+https://github.com/EmbarkStudios/rust-gpu/#b99fc516e61f6aaf41ad9d58e29edf14d7f3121e"
 dependencies = [
  "memchr",
  "notify",
@@ -3443,6 +3445,7 @@ dependencies = [
 [[package]]
 name = "spirv-std"
 version = "0.4.0-alpha.12"
+source = "git+https://github.com/EmbarkStudios/rust-gpu/#b99fc516e61f6aaf41ad9d58e29edf14d7f3121e"
 dependencies = [
  "bitflags",
  "glam",
@@ -3454,6 +3457,7 @@ dependencies = [
 [[package]]
 name = "spirv-std-macros"
 version = "0.4.0-alpha.12"
+source = "git+https://github.com/EmbarkStudios/rust-gpu/#b99fc516e61f6aaf41ad9d58e29edf14d7f3121e"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -3482,6 +3486,7 @@ dependencies = [
 [[package]]
 name = "spirv-types"
 version = "0.4.0-alpha.12"
+source = "git+https://github.com/EmbarkStudios/rust-gpu/#b99fc516e61f6aaf41ad9d58e29edf14d7f3121e"
 
 [[package]]
 name = "stdweb"
