@@ -4074,7 +4074,7 @@ checksum = "712e227841d057c1ee1cd2fb22fa7e5a5461ae8e48fa2ca79ec42cfc1931183f"
 [[package]]
 name = "winit"
 version = "0.26.0"
-source = "git+https://github.com/madsmtm/winit?branch=fix-colorsync-linking#18d807987a39c99710fd87e9931dd54bbefc1924"
+source = "git+https://github.com/madsmtm/winit?branch=remove-colorsync-hack#98e5c9efb563602003ee8aa0655746c1aaf661e3"
 dependencies = [
  "bitflags",
  "cocoa",

@@ -21,7 +21,7 @@ opt-level = 3
 
 [patch.crates-io]
 num-traits = { git = "https://github.com/rust-num/num-traits" }
-winit = { git = "https://github.com/madsmtm/winit", branch="fix-colorsync-linking" }
+winit = { git = "https://github.com/madsmtm/winit", branch="remove-colorsync-hack" }
 # bevy = { git="https://github.com/bevyengine/bevy", branch="main" }
 bevy = { git = "https://github.com/molikto/bevy", branch="shader-bypass" }
 
