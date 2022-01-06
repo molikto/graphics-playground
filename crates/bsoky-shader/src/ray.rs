@@ -1,7 +1,8 @@
 use bsoky_no_std::*;
 use common_no_std::{material::*, svo::{Svo, BlockRayIntersectionInfo}, *};
 
-pub fn skybox(ray: &Ray3) -> Vec3 {
+// from Ray Tracing in One Weekend
+pub fn skybox0(ray: &Ray3) -> Vec3 {
     let unit = ray.dir.normalize();
     let t = 0.5 * (unit.y + 1.0) as f32;
     (1.0 - t) * Vec3::new(1.0, 1.0, 1.0) + t * Vec3::new(0.5, 0.7, 1.0)
@@ -41,7 +42,7 @@ pub fn shade_ray(rng: &mut SRng, svo: Svo<BLOCK_DIM, LEVEL_COUNT>, mut current_r
 
             // no hit, use sky box color
             if final_in_info.mask == Vec3::ZERO {
-                return accumulate_attenuation * skybox(&current_ray);
+                return accumulate_attenuation * skybox0(&current_ray);
             } else {
                 let interaction = material.scatter(
                     rng,

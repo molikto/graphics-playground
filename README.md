@@ -11,3 +11,9 @@ my graphics playground in Rust, using:
 * `bosky`: svo ray tracing (run with `cargo run -p bosky --release`)
 
 
+
+## problems with rust-gpu
+
+* you cannnot do `vec[0]`, use `vec.x` instead
+* https://github.com/EmbarkStudios/rust-gpu/issues/836
+* no specialization constant

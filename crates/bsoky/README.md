@@ -32,5 +32,4 @@ and u16 children pointer compared to a u32 children pointer will always half the
 * fix the pixel bug --- on hold, cannot use RenderDoc
 * there are red error codes
 * 4^4 result in wrong stuff drawn
-* fix the problem with dynamic-vec branch
 * create my own render graph, don't use the builtin PBR pipeline
