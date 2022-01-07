@@ -1,4 +1,3 @@
-use bevy::app::ManualEventReader;
 use bevy::input::*;
 use bevy::input::mouse::MouseMotion;
 use bevy::prelude::*;
@@ -6,14 +5,6 @@ use common::math::*;
 use dolly::prelude::*;
 
 use super::util::*;
-
-/// Keeps track of mouse motion events, pitch, and yaw
-#[derive(Default)]
-struct InputState {
-    reader_motion: ManualEventReader<MouseMotion>,
-    pitch: f32,
-    yaw: f32,
-}
 
 /// Mouse sensitivity and movement speed
 pub struct MovementSettings {
@@ -47,15 +38,15 @@ fn initial_grab_cursor(mut windows: ResMut<Windows>) {
 
 pub struct CameraSetupParameter {
     pub position: Vec3,
+    pub look_at: Vec3,
 }
 
 /// Spawns the `Camera3dBundle` to be controlled
 fn setup_player(mut commands: Commands, setup: Res<CameraSetupParameter>) {
-    let mut camera_pos = setup.position;
-    //.looking_at(Vec3::new(0.0, 0.0, center_pos.z / 2.0), Vec3::Y)
+    let transform = Transform::from_translation(setup.position).looking_at(setup.look_at, Vec3::Y);
     commands
         .spawn_bundle(PerspectiveCameraBundle {
-            transform: Transform::from_translation(camera_pos),
+            transform,
             ..Default::default()
         })
         .insert(MainCamera)
@@ -63,8 +54,8 @@ fn setup_player(mut commands: Commands, setup: Res<CameraSetupParameter>) {
     commands.spawn()
         .insert(CameraRigComponent(
             CameraRig::builder()
-                .with(Position::new(camera_pos))
-                .with(YawPitch::new())
+                .with(Position::new(transform.translation))
+                .with(YawPitch::new().rotation_quat(transform.rotation))
                 .with(Smooth::new_position_rotation(1.0, 1.0))
                 .build(),
         ));
@@ -156,8 +147,7 @@ fn cursor_grab(keys: Res<Input<KeyCode>>, mut windows: ResMut<Windows>) {
 pub struct PlayerPlugin;
 impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut App) {
-        app.init_resource::<InputState>()
-            .add_startup_system(setup_player)
+        app.add_startup_system(setup_player)
             //.add_startup_system(initial_grab_cursor)
             .add_system(update_camera_system)
             .add_system(cursor_grab);

@@ -1,10 +1,13 @@
 use core::ops::{Add, Div, Mul, Rem};
 
 pub use glam::*;
+
+#[cfg(target_arch = "spirv")]
+pub use num_traits::*;
+
 use num_traits::Zero;
 
-
-pub trait VecExt {
+pub trait MyVecExt {
     // TODO CPU version with indexing
     fn get(self, a: usize) -> f32;
     fn step(self, other: Self) -> Self;
@@ -13,7 +16,7 @@ pub trait VecExt {
     fn new_axis(u: usize) -> Self;
 }
 
-impl VecExt for Vec3 {
+impl MyVecExt for Vec3 {
 
     fn step_f(self, other: f32) -> Self {
         // TODO intrinsics
@@ -63,7 +66,7 @@ impl VecExt for Vec3 {
     }
 }
 
-impl VecExt for Vec2 {
+impl MyVecExt for Vec2 {
     fn step(self, other: Self) -> Self {
         vec2(
             if self.x > other.x { 0.0 } else { 1.0 },
@@ -106,11 +109,11 @@ impl VecExt for Vec2 {
 
 }
 
-pub trait Vec2Ext {
+pub trait MyVec2Ext {
     fn extend_axis(self, a: usize, s: f32) -> Vec3;
 }
 
-impl Vec2Ext for Vec2 {
+impl MyVec2Ext for Vec2 {
     #[inline]
     fn extend_axis(self, a: usize, s: f32) -> Vec3 {
         if a == 0 {
@@ -125,11 +128,12 @@ impl Vec2Ext for Vec2 {
     }
 }
 
-pub trait Vec3Ext {
+pub trait MyVec3Ext {
     fn omit_axis(self, a: usize) -> Vec2;
+    fn reflect(self, normal: Self) -> Self;
 }
 
-impl Vec3Ext for Vec3 {
+impl MyVec3Ext for Vec3 {
     #[inline]
     fn omit_axis(self, a: usize) -> Vec2 {
         if a == 0 {
@@ -141,6 +145,10 @@ impl Vec3Ext for Vec3 {
         } else {
             panic!()
         }
+    }
+
+    fn reflect(self, normal: Vec3) -> Self {
+        self - 2.0 * normal * self.dot(normal)
     }
 }
 

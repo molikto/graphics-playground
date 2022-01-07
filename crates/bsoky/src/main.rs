@@ -28,6 +28,7 @@ use common::math::svo::*;
 use common::math::*;
 
 use env_render::CustomMaterial;
+use rand::{thread_rng, Rng};
 use sdfu::{SDF};
 
 
@@ -96,7 +97,7 @@ fn debug_create_sdf() -> MySvoMut {
                         }
                     }
                     let material = if count > level_size * level_size * level_size / 2 {
-                        1
+                        thread_rng().gen_range(1..4)
                     } else {
                         0
                     };
@@ -132,6 +133,7 @@ fn create_simple_debug_objects(
 
 fn main() {
     //simulation_benchmark();
+    let half_size = (MySvoMut::total_dim() / 2) as f32;
     App::new()
         .insert_resource(Msaa {  samples: 4 })
         .insert_resource(WgpuOptions {
@@ -155,7 +157,8 @@ fn main() {
             ..Default::default()
         })
         .insert_resource(bevy_common::camera::CameraSetupParameter {
-            position: Vec3::splat((MySvoMut::total_dim() / 2) as f32),
+            position: Vec3::new(1.0, 1.0, 0.0) * half_size,
+            look_at: Vec3::splat(1.0) * half_size,
         })
         .add_plugin(bevy_common::camera::PlayerPlugin)
         .add_plugin(LogDiagnosticsPlugin {

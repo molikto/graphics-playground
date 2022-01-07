@@ -1,6 +1,5 @@
-use crate::math::Vec3;
+use crate::math::*;
 
-use num_traits::Float;
 
 #[allow(non_snake_case)]
 

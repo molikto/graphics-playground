@@ -1,7 +1,5 @@
 use crate::math::*;
 
-use num_traits::Float;
-
 pub trait SrgbColorSpace {
     fn linear_to_nonlinear_srgb(self) -> Self;
     fn nonlinear_to_linear_srgb(self) -> Self;

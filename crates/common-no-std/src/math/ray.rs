@@ -38,6 +38,6 @@ impl Add<Vec3> for Ray3 {
 pub struct HitRecord3 {
     pub is_hit: bool,
     pub t: f32,
-    pub from_inside: bool,
+    pub from_outside: bool,
     pub nor: Vec3,
 }

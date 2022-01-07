@@ -6,11 +6,10 @@ pub const BLOCK_DIM: usvo = 4;
 pub const LEVEL_COUNT: usize = 3;
 
 #[cfg(target_arch = "spirv")]
-pub type MySvo<'a>  = Svo<'a, BLOCK_DIM, LEVEL_COUNT>;
-
+pub type MySvo<'a>  = Svo<&'a [usvo], BLOCK_DIM, LEVEL_COUNT>;
 
 #[cfg(not(target_arch = "spirv"))]
-pub type MySvoMut  = Svo<Vec<usvo>, BLOCK_DIM, LEVEL_COUNT>;
+pub type MySvoMut  = SvoMut<BLOCK_DIM, LEVEL_COUNT>;
 
 pub const BLOCK_RENDER_SIZE: f32 = 1.0;//;0.25;
 
