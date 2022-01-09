@@ -26,10 +26,3 @@ another thing is having bigger block makes block count way down, so we can handl
 
 and u16 children pointer compared to a u32 children pointer will always half the memory requirement 
 
-
-## TODO
-
-* fix the pixel bug --- on hold, cannot use RenderDoc
-* there are red error codes
-* 4^4 result in wrong stuff drawn
-* create my own render graph, don't use the builtin PBR pipeline
