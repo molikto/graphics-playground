@@ -21,7 +21,6 @@ use bevy::{
 };
 
 pub mod env_render;
-pub mod load_rsvo;
 use bevy_common::{RevertBox, create_debug_cube, MovementSettings};
 use bsoky_no_std::{BLOCK_DIM, LEVEL_COUNT, MySvoMut};
 use common::math::svo::*;
@@ -34,11 +33,9 @@ use sdfu::{SDF};
 
 
 fn debug_create_rsvo() -> MySvoMut {
-    let mut svo = MySvoMut::init(0);
     // download yourself here https://github.com/ephtracy/voxel-model/blob/master/svo/
     let rsvo = std::fs::read( Path::new(env!("CARGO_MANIFEST_DIR")).join("sibenik_8k.rsvo")).unwrap();
-    //load_rsvo::load_rsvo(&rsvo, &mut svo);
-    println!("rsvo size: {}, svo size {}, ratio: {}", rsvo.len(), svo.memory_used(), svo.memory_ratio());
+    let svo: MySvoMut = load_svo_from_rsvo(&rsvo);
     svo
 }
 
@@ -110,8 +107,6 @@ fn debug_create_sdf() -> MySvoMut {
             }
         }
     }
-    println!("checksum {}, capacity {}", svo.checksum(), svo.capacity());
-    println!("total dim {} block count {}, memory used {}", MySvoMut::total_dim(), svo.block_count(), svo.memory_used());
     svo
 }
 
@@ -120,7 +115,8 @@ fn create_simple_debug_objects(
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<CustomMaterial>>,
 ) {
-    let svo = debug_create_sdf();
+    let svo = debug_create_rsvo();
+    println!("total dim {}\nblock count {}\nmemory used {}\nmemory ratio {}", MySvoMut::total_dim(), svo.block_count(), svo.memory_used(), svo.memory_ratio());
     let total_size = MySvoMut::total_dim() as f32;
     let mesh = meshes.add(RevertBox::zero_with_size(Vec3::splat(total_size)).into());
     let material = materials.add(CustomMaterial { svo });
@@ -135,7 +131,7 @@ fn main() {
     //simulation_benchmark();
     let half_size = (MySvoMut::total_dim() / 2) as f32;
     App::new()
-        .insert_resource(Msaa {  samples: 4 })
+        .insert_resource(Msaa {  samples: 1 })
         .insert_resource(WgpuOptions {
             backends: Backends::VULKAN,
             limits: WgpuLimits {

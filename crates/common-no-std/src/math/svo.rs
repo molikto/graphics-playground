@@ -7,11 +7,11 @@ use crate::Aabb3;
 use super::ray::*;
 use super::vec::*;
 
-pub type usvo = u16;
-pub type Usvo3 = SUVec3;
+// pub type usvo = u16;
+// pub type Usvo3 = SUVec3;
 
-// pub type usvo = u32;
-// pub type Usvo3 = UVec3;
+pub type usvo = u32;
+pub type Usvo3 = UVec3;
 
 pub fn vec3_to_usvo3(v: Vec3) -> Usvo3 {
     Usvo3::new(v.x as usvo, v.y as usvo, v.z as usvo)
@@ -38,6 +38,14 @@ impl<const BLOCK_DIM: usvo, const LEVEL_COUNT: usize> BlockInfo<BLOCK_DIM, LEVEL
 #[repr(transparent)]
 pub struct Svo<REF : Deref<Target = [usvo]>, const BLOCK_DIM: usvo, const LEVEL_COUNT: usize> {
     pub mem: REF,
+}
+
+const EPS: f32 = 3.552713678800501e-15;
+
+fn de_eps(d: &mut Vec3) {
+	d.x = if d.x.abs() > EPS { d.x } else if d.x >= 0.0 { EPS } else { -EPS };
+	d.y = if d.y.abs() > EPS { d.y } else if d.y >= 0.0 { EPS } else { -EPS };
+	d.z = if d.z.abs() > EPS { d.z } else if d.z >= 0.0 { EPS } else { -EPS };
 }
 
 impl<REF : Deref<Target = [usvo]>, const BLOCK_DIM: usvo, const LEVEL_COUNT: usize> Svo<REF, BLOCK_DIM, LEVEL_COUNT> {
@@ -67,9 +75,9 @@ impl<REF : Deref<Target = [usvo]>, const BLOCK_DIM: usvo, const LEVEL_COUNT: usi
 
     // memory ratio assuming each block use a byte of memory.
     pub fn memory_ratio(&self) -> f32 {
-        let size = self.memory_used();
-        let native_size = (BLOCK_DIM.pow(LEVEL_COUNT as u32)).pow(3);
-        return size as f32 / (native_size as f32);
+        let size = self.memory_used() as f64;
+        let native_size = ((BLOCK_DIM as f64).powf(LEVEL_COUNT as f64)).powf(3.0);
+        return (size / native_size) as f32;
     }
 
     //
@@ -108,6 +116,11 @@ impl<REF : Deref<Target = [usvo]>, const BLOCK_DIM: usvo, const LEVEL_COUNT: usi
     }
 
     #[inline]
+    pub fn level_position_abs_to_position(&self, position: Usvo3, level: usvo) -> Usvo3 {
+        return position * (BLOCK_DIM.pow(LEVEL_COUNT as u32 - 1 - (level as u32)));
+    }
+
+    #[inline]
     pub fn level_position(&self, position: Usvo3, level: usvo) -> Usvo3 {
         return self.level_position_abs(position, level) % BLOCK_DIM;
     }
@@ -120,11 +133,11 @@ impl<REF : Deref<Target = [usvo]>, const BLOCK_DIM: usvo, const LEVEL_COUNT: usi
         } else if error_code == -3 {
             return vec3(0.0, 0.0, 1.0);
         } else if error_code == -4 {
-            return vec3(1.0, 0.0, 0.0);
+            return vec3(0.0, 1.0, 1.0);
         } else if error_code == -5 {
             return vec3(1.0, 0.0, 1.0);
         } else if error_code == -6 {
-            return vec3(0.0, 1.0, 1.0);
+            return vec3(1.0, 1.0, 0.0);
         } else {
             panic!();
         }
@@ -143,6 +156,7 @@ impl<REF : Deref<Target = [usvo]>, const BLOCK_DIM: usvo, const LEVEL_COUNT: usi
         // TODO there are still cases where it infinite loop..
         // the max dim we can have is 8^8, otherwise it will not work because of floating point issue
         // https://itectec.com/matlab-ref/matlab-function-flintmax-largest-consecutive-integer-in-floating-point-format/
+        de_eps(&mut ray.dir);
         ray.dir = ray.dir.normalize_or_zero();
         if ray.dir == Vec3::ZERO {
             return -3;
@@ -302,14 +316,14 @@ impl<const BLOCK_DIM: usvo, const LEVEL_COUNT: usize> Svo<Vec<usvo>, BLOCK_DIM, 
         self.mem.capacity()
     }
 
-    pub fn checksum(&self) -> u64 {
-        let mut hasher = DefaultHasher::new();
-        let usvo_used =  self.usvo_used();
-        for i in 0..usvo_used {
-            hasher.write_u16(self.mem[i]);
-        }
-        hasher.finish()
-    }
+    // pub fn checksum(&self) -> u64 {
+    //     let mut hasher = DefaultHasher::new();
+    //     let usvo_used =  self.usvo_used();
+    //     for i in 0..usvo_used {
+    //         hasher.write_u16(self.mem[i]);
+    //     }
+    //     hasher.finish()
+    // }
 
     fn remove_blocks_at_index(&mut self, index: usize) {
         // TODO remove unused blocks

@@ -42,3 +42,5 @@ my graphics playground in Rust, using:
 * read more code & paper
     * https://github.com/AdamYuan/SparseVoxelOctree
     * https://github.com/oskarbraten/voxel-path-tracer
+    * https://github.com/stijnherfst/BrickMap
+    * https://github.com/rebelroad-reinhart/brickmap-vulkan

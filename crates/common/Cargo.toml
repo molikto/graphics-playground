@@ -4,6 +4,8 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+rand = "0.8.4"
+rand_pcg = "0.3.1"
 common-no-std = { path="../common-no-std" }
 dot_vox = { version="4.1.0", optional = true }
 

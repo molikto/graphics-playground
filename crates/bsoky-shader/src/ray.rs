@@ -12,7 +12,7 @@ pub fn skybox0(ray: &Ray3) -> Vec3 {
     (1.0 - t) * Vec3::new(1.0, 1.0, 1.0) + t * Vec3::new(0.5, 0.7, 1.0)
 }
 
-const MAX_RAY_DEPTH: u32 = 10;
+const MAX_RAY_DEPTH: u32 = 4;
 pub fn shade_ray(rng: &mut SRng, svo: MySvo, mut current_ray: Ray3) -> Vec3 {
     let material1 = Lambertian {
         albedo: RgbLinear(vec3(0.4, 0.1, 0.4)),
@@ -31,7 +31,7 @@ pub fn shade_ray(rng: &mut SRng, svo: MySvo, mut current_ray: Ray3) -> Vec3 {
             t: -1.0,
         };
         let mut material_index: usvo = 0;
-        let error_code = svo.traverse_ray(100, current_ray, |in_info, _, info| {
+        let error_code = svo.traverse_ray(400, current_ray, |in_info, _, info| {
             if info.data != 0 {
                 final_in_info = in_info;
                 material_index = info.data;
@@ -45,7 +45,8 @@ pub fn shade_ray(rng: &mut SRng, svo: MySvo, mut current_ray: Ray3) -> Vec3 {
         } else {
             // debug how much voxel get traveled
             // let count = error_code as f32;
-            // return Vec3::splat((count) / 100.0);
+            // return Vec3::splat((count) / 400.0);
+
             // debug levels
             // return Vec3::splat((count) / 1000.0);
 
