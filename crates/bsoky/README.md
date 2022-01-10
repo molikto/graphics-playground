@@ -1,9 +1,3 @@
-references:
-* https://research.nvidia.com/sites/default/files/pubs/2010-02_Efficient-Sparse-Voxel/laine2010i3d_paper.pdf
-* https://developer.nvidia.com/gvdb
-* https://github.com/Ria8651/voxel-tracing-playground
-
-
 
 the u16 version can handle max block of 2^15=32768 blocks, it cannot handle 2^9 or 4^5 scene...
 
