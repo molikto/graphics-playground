@@ -44,3 +44,4 @@ my graphics playground in Rust, using:
     * https://github.com/oskarbraten/voxel-path-tracer
     * https://github.com/stijnherfst/BrickMap
     * https://github.com/rebelroad-reinhart/brickmap-vulkan
+    * https://github.com/RvanderLaan/DAGger

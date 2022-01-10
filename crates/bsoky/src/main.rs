@@ -133,7 +133,7 @@ fn main() {
     App::new()
         .insert_resource(Msaa {  samples: 1 })
         .insert_resource(WgpuOptions {
-            backends: Backends::VULKAN,
+            backends: Some(Backends::VULKAN),
             limits: WgpuLimits {
                 max_storage_buffer_binding_size: 4000000000,
                 ..Default::default()

@@ -5,26 +5,7 @@ edition = "2021"
 
 
 [dependencies]
-variant_count = "1.1.0"
-num_enum = "0.5.4"
-transmute = "0.1.1"
-num-traits = "0.2.14"
-maplit = "1.0.2"
-packed_struct = "0.10.0"
-rand = "0.8.4"
-rand_pcg = "0.3.1"
-enum-map= "1.1.1"
-derive_more = "0.99.16"
-lazy_static = "1.4.0"
-serde = "1.0.130"
-serde_derive = "1.0.130"
-smallvec = { version = "1.7.0", features = ["serde", "union"] }
-lazy-static-include = "1.2.1"
-
-## graphic API
-bytemuck = { version = "1.7.2", features = ["derive"] }
 dolly = "0.1.4"
-bevy_crevice = { git="https://github.com/bevyengine/bevy", branch="main", features=["glam" ]}
-bevy = { git="https://github.com/bevyengine/bevy", branch="main" }
+bevy = "0.6.0"
 
 common = { path = "../common" }

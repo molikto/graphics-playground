@@ -3,7 +3,7 @@
 use common_no_std::{*, svo::*};
 
 pub const BLOCK_DIM: usvo = 4;
-pub const LEVEL_COUNT: usize = 5;
+pub const LEVEL_COUNT: usize = 4;
 
 #[cfg(target_arch = "spirv")]
 pub type MySvo<'a>  = Svo<&'a [usvo], BLOCK_DIM, LEVEL_COUNT>;

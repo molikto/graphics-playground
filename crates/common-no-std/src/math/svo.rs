@@ -127,9 +127,9 @@ impl<REF : Deref<Target = [usvo]>, const BLOCK_DIM: usvo, const LEVEL_COUNT: usi
 
     pub fn debug_error_code_colors(error_code: i32) -> Vec3 {
         if error_code == -1 {
-            return vec3(1.0, 0.0, 0.0);
-        } else if error_code == -2 {
             return vec3(0.0, 1.0, 0.0);
+        } else if error_code == -2 {
+            return vec3(1.0, 0.0, 0.0);
         } else if error_code == -3 {
             return vec3(0.0, 0.0, 1.0);
         } else if error_code == -4 {
