@@ -44,8 +44,8 @@ pub fn shade_ray(rng: &mut SRng, svo: MySvo, mut current_ray: Ray3) -> Vec3 {
             return MySvo::debug_error_code_colors(error_code);
         } else {
             // debug how much voxel get traveled
-            // let count = error_code as f32;
-            // return Vec3::splat((count) / 400.0);
+            let count = error_code as f32;
+            return Vec3::splat((count) / 400.0);
 
             // debug levels
             // return Vec3::splat((count) / 1000.0);

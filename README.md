@@ -20,6 +20,7 @@ my graphics playground in Rust, using:
 
 
 ## referneces
+
 * data structure
     * GigaVoxels: http://gigavoxels.inrialpes.fr/
     * ESVO: https://research.nvidia.com/sites/default/files/pubs/2010-02_Efficient-Sparse-Voxel/laine2010i3d_paper.pdf
@@ -56,6 +57,7 @@ my graphics playground in Rust, using:
         * [ ] there are red error codes with SDF scene
         * [ ] 4^4 result in wrong stuff drawn
     * performance
+        * [ ] base layer
         * [ ] compare with ESVO performance
         * [ ] beam optimization
         * [ ] redirect rays

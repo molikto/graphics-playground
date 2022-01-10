@@ -2,7 +2,7 @@
 
 use common_no_std::{*, svo::*};
 
-pub const BLOCK_DIM: usvo = 4;
+pub const BLOCK_DIM: usvo = 8;
 pub const LEVEL_COUNT: usize = 4;
 
 #[cfg(target_arch = "spirv")]

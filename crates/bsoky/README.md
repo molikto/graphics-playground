@@ -25,13 +25,6 @@ and u16 children pointer compared to a u32 children pointer will always half the
 
 ### the rsvo scene
 
-4^4, u16: 
-total dim 256
-block count 17530
-memory used 2243968
-memory ratio 0.13375092
-avg 0.022031s
-
 2^8, u16: -- result wrong???
 total dim 256
 block count 34129
@@ -39,12 +32,12 @@ memory used 546080
 memory ratio 0.032548904
 avg 0.018861s
 
-4^4, u32:
+4^4, u16: 
 total dim 256
 block count 17530
-memory used 4487936
-memory ratio 0.26750183
-avg 0.020623s
+memory used 2243968
+memory ratio 0.13375092
+avg 0.022031s
 
 2^8, u32:
 total dim 256
@@ -53,12 +46,12 @@ memory used 3092768
 memory ratio 0.18434334
 avg 0.023820s
 
-4^5, u32:
-total dim 1024
-block count 338043
-memory used 86539264
-memory ratio 0.08059597
-avg 0.033006s
+4^4, u32:
+total dim 256
+block count 17530
+memory used 4487936
+memory ratio 0.26750183
+avg 0.020623s
 
 2^10, u32:
 total dim 1024
@@ -66,3 +59,17 @@ block count 1720910
 memory used 55069152
 memory ratio 0.051287144
 avg 0.045746s
+
+4^5, u32:
+total dim 1024
+block count 338043
+memory used 86539264
+memory ratio 0.08059597
+avg 0.033006s
+
+8^4, u32, cap at level 10:
+total dim 4096
+block count 76256
+memory used 156174336
+memory ratio 0.0022726357
+avg 0.037229s
