@@ -1,9 +1,6 @@
 use super::super::math::*;
 
-#[cfg(not(target_arch = "spirv"))]
-use bevy_crevice::std140::AsStd140;
 
-#[cfg_attr(not(target_arch = "spirv"), derive(AsStd140))]
 #[derive(Copy, Clone, Default)]
 pub struct ViewUniform {
   pub view_proj: Mat4,
@@ -16,14 +13,12 @@ pub struct ViewUniform {
   pub height: f32,
 }
 
-#[cfg_attr(not(target_arch = "spirv"), derive(AsStd140))]
 #[derive(Copy, Clone, Default)]
 pub struct MeshUniform {
   pub transform: Mat4,
 }
 
 
-#[cfg_attr(not(target_arch = "spirv"), derive(AsStd140))]
 #[derive(Copy, Clone, Default)]
 pub struct MapRenderData {
     pub size: UVec3,

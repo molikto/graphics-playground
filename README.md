@@ -42,6 +42,7 @@ my graphics playground in Rust, using:
     * GPU Wavefront Path Tracing: https://research.nvidia.com/sites/default/files/pubs/2013-07_Megakernels-Considered-Harmful/laine2013hpg_paper.pdf
     * TAA: http://behindthepixels.io/assets/files/TemporalAA.pdf 
         * https://github.com/oskarbraten/voxel-path-tracer
+        * https://jacco.ompf2.com/2019/07/18/wavefront-path-tracing/
     * *more random ones bellow*
     * https://github.com/chunky-dev/chunky/
     * https://github.com/erichlof/THREE.js-PathTracing-Renderer
@@ -57,8 +58,8 @@ my graphics playground in Rust, using:
         * [ ] there are red error codes with SDF scene
         * [ ] 4^4 result in wrong stuff drawn
     * performance
+        * [ ] compare with ESVO performance -- 5~6 times slower
         * [ ] base layer
-        * [ ] compare with ESVO performance
         * [ ] beam optimization
         * [ ] redirect rays
     * API

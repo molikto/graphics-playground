@@ -1,5 +1,3 @@
-
-
 use core::ops::Deref;
 
 use crate::Aabb3;
@@ -34,21 +32,40 @@ impl<const BLOCK_DIM: usvo, const LEVEL_COUNT: usize> BlockInfo<BLOCK_DIM, LEVEL
     }
 }
 
-
 #[repr(transparent)]
-pub struct Svo<REF : Deref<Target = [usvo]>, const BLOCK_DIM: usvo, const LEVEL_COUNT: usize> {
+pub struct Svo<REF: Deref<Target = [usvo]>, const BLOCK_DIM: usvo, const LEVEL_COUNT: usize> {
     pub mem: REF,
 }
 
 const EPS: f32 = 3.552713678800501e-15;
 
 fn de_eps(d: &mut Vec3) {
-	d.x = if d.x.abs() > EPS { d.x } else if d.x >= 0.0 { EPS } else { -EPS };
-	d.y = if d.y.abs() > EPS { d.y } else if d.y >= 0.0 { EPS } else { -EPS };
-	d.z = if d.z.abs() > EPS { d.z } else if d.z >= 0.0 { EPS } else { -EPS };
+    d.x = if d.x.abs() > EPS {
+        d.x
+    } else if d.x >= 0.0 {
+        EPS
+    } else {
+        -EPS
+    };
+    d.y = if d.y.abs() > EPS {
+        d.y
+    } else if d.y >= 0.0 {
+        EPS
+    } else {
+        -EPS
+    };
+    d.z = if d.z.abs() > EPS {
+        d.z
+    } else if d.z >= 0.0 {
+        EPS
+    } else {
+        -EPS
+    };
 }
 
-impl<REF : Deref<Target = [usvo]>, const BLOCK_DIM: usvo, const LEVEL_COUNT: usize> Svo<REF, BLOCK_DIM, LEVEL_COUNT> {
+impl<REF: Deref<Target = [usvo]>, const BLOCK_DIM: usvo, const LEVEL_COUNT: usize>
+    Svo<REF, BLOCK_DIM, LEVEL_COUNT>
+{
     const BLOCK_SIZE: usvo = BLOCK_DIM * BLOCK_DIM * BLOCK_DIM;
 
     pub fn total_dim() -> usvo {
@@ -161,6 +178,8 @@ impl<REF : Deref<Target = [usvo]>, const BLOCK_DIM: usvo, const LEVEL_COUNT: usi
         if ray.dir == Vec3::ZERO {
             return -3;
         }
+        let ray_dir_inv = 1.0 / ray.dir;
+        let ray_pos_div_ray_dir = ray.pos / ray.dir;
         let ray_dir_signum = ray.dir.signum();
         let ray_dir_limit_mul = (ray_dir_signum + 1.0) / 2.0;
         let total_dim = Self::total_dim();
@@ -180,36 +199,20 @@ impl<REF : Deref<Target = [usvo]>, const BLOCK_DIM: usvo, const LEVEL_COUNT: usi
         let mut block_indexs = [0usize; LEVEL_COUNT];
         block_indexs[0] = self.root_block_index() * (Self::BLOCK_SIZE as usize);
 
-        let mut block_limits = [Vec3::ZERO; LEVEL_COUNT];
-        block_limits[0] = ray_dir_limit_mul * total_dim_f;
+        let block_limit = ray_dir_limit_mul * total_dim_f;
+        let ts = block_limit * ray_dir_inv - ray_pos_div_ray_dir;
+        let ts_min = ts.x.min(ts.y).min(ts.z);
+        let mut block_limits = [ts_min; LEVEL_COUNT];
         // there is a off by one error...
-        let mut block_limit: Vec3;
         //
         // block aabbs is terminal block
         let mut level: usvo = 0;
         let mut position_up = Usvo3::ZERO;
         let mut level_dim_div = total_dim / BLOCK_DIM;
+        // go inside levels
+        let mut level_position_abs: Usvo3;
+        let mut index: usvo;
         loop {
-            loop {
-                // exit levels first
-                let block_limit = block_limits[level as usize];
-                let test = ((block_limit - position).signum() * ray_dir_signum).sum();
-                if test == 3.0 {
-                    break;
-                } else if level == 0 {
-                    return count;
-                } else {
-                    level -= 1;
-                    level_dim_div *= BLOCK_DIM;
-                }
-            }
-            count += 1;
-            if count > max_count {
-                return -1;
-            }
-            // go inside levels
-            let mut level_position_abs: Usvo3;
-            let mut index: usvo;
             let position_u = vec3_to_usvo3(position);
             if position_u == position_up {
                 return -4;
@@ -222,51 +225,55 @@ impl<REF : Deref<Target = [usvo]>, const BLOCK_DIM: usvo, const LEVEL_COUNT: usi
                     block_indexs[level as usize] + Self::encode(level_position);
                 let target_block = self.mem[target_block_index];
                 index = Self::block_index_data(target_block);
-                block_limit =
+                let block_limit =
                     (level_position_abs.as_vec3() + ray_dir_limit_mul) * (level_dim_div as f32);
+                let ts = block_limit * ray_dir_inv - ray_pos_div_ray_dir;
+                let ts_min = ts.x.min(ts.y).min(ts.z);
                 if Self::is_terminal_block(target_block) {
+                    let incident = BlockRayIntersectionInfo { t, mask };
+                    // TODO this fixes some problem of inifinite looping
+                    // set mask later, because we want to know the mask of the enter face
+                    t = if ts_min < t { t + 0.01 } else { ts_min };
+                    mask = ts.step_f(t) * ray_dir_signum;
+                    if mask == Vec3::ZERO {
+                        return -2;
+                    }
+                    let block_info = BlockInfo {
+                        level_position_abs,
+                        level,
+                        data: index,
+                    };
+                    let ret = closure(incident, BlockRayIntersectionInfo { t, mask }, block_info);
+                    if ret {
+                        return count;
+                    }
                     break;
+                } else {
+                    level += 1;
+                    level_dim_div /= BLOCK_DIM; // must be here or we get 1 / N
+                    block_limits[level as usize] = ts_min;
+                    block_indexs[level as usize] = index as usize * (Self::BLOCK_SIZE as usize);
                 }
-                level += 1;
-                level_dim_div /= BLOCK_DIM; // must be here or we get 1 / N
-                block_limits[level as usize] = block_limit;
-                block_indexs[level as usize] = index as usize * (Self::BLOCK_SIZE as usize);
             }
-            let ts = (block_limit - ray.pos) / ray.dir;
-            let ts_min = ts.min_element();
-            let incident_t = t;
-            let incident_mask = mask;
-            if ts_min < t {
-                // TODO this fixes some problem of inifinite looping
-                t = t + 0.0001;
-            } else {
-                t = ts_min;
-            }
-            let block_info = BlockInfo {
-                level_position_abs,
-                level,
-                data: index,
-            };
-            mask = ts.step_f(t) * ray_dir_signum;
-            if mask == Vec3::ZERO {
-                return -2;
-            }
-            let ret = closure(
-                BlockRayIntersectionInfo {
-                    t: incident_t,
-                    mask: incident_mask,
-                },
-                BlockRayIntersectionInfo { t, mask },
-                block_info,
-            );
-            if ret {
-                return count;
-            }
-            // set mask later, because we want to know the mask of the enter face
 
             // this floating point position is because we use unsigned position_u, it's actually value doesn't mater that much
             // we add extra value so we don't step on the boundary. `position = ray.at(t + 0.01)` doesn't work
-            position = ray.at(t) + mask / 2.0;
+            position = ray.at(t) + mask * 0.5;
+            count += 1;
+            if count > max_count {
+                return -1;
+            }
+            loop {
+                let block_limit = block_limits[level as usize];
+                if t < block_limit {
+                    break;
+                } else if level == 0 {
+                    return count;
+                } else {
+                    level -= 1;
+                    level_dim_div *= BLOCK_DIM;
+                }
+            }
         }
     }
 
@@ -289,17 +296,12 @@ impl<REF : Deref<Target = [usvo]>, const BLOCK_DIM: usvo, const LEVEL_COUNT: usi
     }
 }
 
+#[cfg(not(target_arch = "spirv"))]
+use std::{collections::hash_map::DefaultHasher, hash::Hasher, vec::*};
 
 #[cfg(not(target_arch = "spirv"))]
-use std::{
-    vec::*,
-    hash::{Hasher},
-    collections::hash_map::DefaultHasher
-};
-
-#[cfg(not(target_arch = "spirv"))]
-pub type SvoMut<const BLOCK_DIM: usvo, const LEVEL_COUNT: usize> = Svo<Vec<usvo>, BLOCK_DIM, LEVEL_COUNT>;
-
+pub type SvoMut<const BLOCK_DIM: usvo, const LEVEL_COUNT: usize> =
+    Svo<Vec<usvo>, BLOCK_DIM, LEVEL_COUNT>;
 
 #[cfg(not(target_arch = "spirv"))]
 impl<const BLOCK_DIM: usvo, const LEVEL_COUNT: usize> Svo<Vec<usvo>, BLOCK_DIM, LEVEL_COUNT> {
@@ -337,11 +339,11 @@ impl<const BLOCK_DIM: usvo, const LEVEL_COUNT: usize> Svo<Vec<usvo>, BLOCK_DIM, 
             self.mem.push(material);
         }
         for i in 0..Self::BLOCK_SIZE {
-            self.mem[(cur_top as usize) * (Self::BLOCK_SIZE as usize) + (i as usize)] = Self::new_block(true, material);
+            self.mem[(cur_top as usize) * (Self::BLOCK_SIZE as usize) + (i as usize)] =
+                Self::new_block(true, material);
         }
         return cur_top;
     }
-
 
     // the position is a "representative" position
     pub fn set_with_level_cap(&mut self, level_cap: usvo, position: Usvo3, material: usvo) {
@@ -433,7 +435,8 @@ mod tests {
                     let hit = block.data != 0;
                     if hit {
                         let light_level = vec3(0.6, 0.75, 1.0);
-                        let color = vec3(0.3, 0.7, 0.5) * light_level.dot(out_info.mask.abs()) * 255.0;
+                        let color =
+                            vec3(0.3, 0.7, 0.5) * light_level.dot(out_info.mask.abs()) * 255.0;
                         image.put_pixel(i, j, Rgb([color.x as u8, color.y as u8, color.z as u8]));
                     }
                     return hit;

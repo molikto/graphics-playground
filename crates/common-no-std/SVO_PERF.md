@@ -73,3 +73,16 @@ block count 76256
 memory used 156174336
 memory ratio 0.0022726357
 avg 0.037229s
+
+## compared to ESVO code
+
+
+level 10 
+           wavefront duration    occupancy
+my: 16ms   100                   3   (60 fps ish)
+es: 3ms    30                    5   (280fps ish)
+
+5 times more thread excuation
+
+
+beam optimization can get more frames, especially in small fov
