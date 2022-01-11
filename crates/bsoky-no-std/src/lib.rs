@@ -1,15 +1,15 @@
 #![cfg_attr(all(target_arch = "spirv", not(test)), no_std)]
 
-use common_no_std::{*, svo::*};
+use common_no_std::{*, svt::*};
 
-pub const BLOCK_DIM: usvo = 4;
+pub const BLOCK_DIM: usvt = 4;
 pub const LEVEL_COUNT: usize = 5;
 
 #[cfg(target_arch = "spirv")]
-pub type MySvo<'a>  = Svo<&'a [usvo], BLOCK_DIM, LEVEL_COUNT>;
+pub type MySvt<'a>  = Svt<&'a [usvt], BLOCK_DIM, LEVEL_COUNT>;
 
 #[cfg(not(target_arch = "spirv"))]
-pub type MySvoMut  = SvoMut<BLOCK_DIM, LEVEL_COUNT>;
+pub type MySvtMut  = SvtMut<BLOCK_DIM, LEVEL_COUNT>;
 
 pub const BLOCK_RENDER_SIZE: f32 = 1.0;//;0.25;
 

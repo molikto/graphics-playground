@@ -1,7 +1,7 @@
 use bsoky_no_std::*;
 use common_no_std::{
     material::*,
-    svo::{usvo, BlockRayIntersectionInfo, Svo},
+    svt::{usvt, BlockRayIntersectionInfo, Svt},
     *,
 };
 
@@ -13,7 +13,7 @@ pub fn skybox0(ray: &Ray3) -> Vec3 {
 }
 
 const MAX_RAY_DEPTH: u32 = 4;
-pub fn shade_ray(rng: &mut SRng, svo: MySvo, mut current_ray: Ray3) -> Vec3 {
+pub fn shade_ray(rng: &mut SRng, svt: MySvt, mut current_ray: Ray3) -> Vec3 {
     let material1 = Lambertian {
         albedo: RgbLinear(vec3(0.4, 0.1, 0.4)),
     };
@@ -30,8 +30,8 @@ pub fn shade_ray(rng: &mut SRng, svo: MySvo, mut current_ray: Ray3) -> Vec3 {
             mask: Vec3::ZERO,
             t: -1.0,
         };
-        let mut material_index: usvo = 0;
-        let error_code = svo.traverse_ray(400, current_ray, |in_info, _, info| {
+        let mut material_index: usvt = 0;
+        let error_code = svt.traverse_ray(400, current_ray, |in_info, _, info| {
             if info.data != 0 {
                 final_in_info = in_info;
                 material_index = info.data;
@@ -41,7 +41,7 @@ pub fn shade_ray(rng: &mut SRng, svo: MySvo, mut current_ray: Ray3) -> Vec3 {
             }
         });
         if error_code < 0 {
-            return MySvo::debug_error_code_colors(error_code);
+            return MySvt::debug_error_code_colors(error_code);
         } else {
             // debug how much voxel get traveled
             let count = error_code as f32;

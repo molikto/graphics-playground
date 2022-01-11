@@ -8,7 +8,7 @@
 #[cfg(not(target_arch = "spirv"))]
 use spirv_std::macros::spirv;
 use spirv_std::num_traits::Float;
-use common_no_std::{math::*, shader::base_uniform::*, svo::*};
+use common_no_std::{math::*, shader::base_uniform::*, svt::*};
 use bsoky_no_std::*;
 
 mod ray;
@@ -59,13 +59,13 @@ pub fn fragment(
     #[spirv(frag_coord)]
     in_frag_coord: Vec4,
     #[spirv(uniform, descriptor_set = 0, binding = 0)] view: &ViewUniform,
-    #[spirv(storage_buffer, descriptor_set = 1, binding = 0)] svo: &[usvo],
+    #[spirv(storage_buffer, descriptor_set = 1, binding = 0)] svt: &[usvt],
     #[spirv(flat)] face: u32,
     uv: Vec2,
     output: &mut Vec4,
 ) {
-    let svo = MySvo { mem: svo };
-    let total_dim = MySvo::total_dim() as f32;
+    let svt = MySvt { mem: svt };
+    let total_dim = MySvt::total_dim() as f32;
     let map_size = Vec3::splat(total_dim);
     let frag_world_position = frag_world_position_from_face(from_simulation_coor(map_size), face, uv);
 
@@ -85,7 +85,7 @@ pub fn fragment(
     if ray.dir == Vec3::ZERO {
         ray.dir = vec3(1.0, 0.0, 0.0);
     }
-    let env_color = ray::shade_ray(&mut rng, svo, ray);
+    let env_color = ray::shade_ray(&mut rng, svt, ray);
 
     // let color = clamp(env_color, Vec4(0.0), Vec4(1.0));
     // let color = color_over(env_color, Vec4(0.5, 0.5, 0.5, 1.0));

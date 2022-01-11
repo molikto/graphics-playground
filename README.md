@@ -5,12 +5,32 @@ my graphics playground in Rust, using:
 * https://github.com/EmbarkStudios/rust-gpu
 * https://github.com/bevyengine/bevy
 
+run with `cargo run -p bosky --release`
 
-## crates
+## done and TODOs
 
-* `bosky`: svo ray tracing (run with `cargo run -p bosky --release`)
-
-
+* data structures (in `common-no-std`)
+    * sparse voxel N-tree (`svt.rs`) and ray casting
+        * ray traversal bugs
+            * [ ] infinie looping (white)
+            * [ ] there are red error codes with SDF scene
+            * [ ] 4^4 result in wrong stuff drawn
+        * performance
+            * [ ] compare with ESVO performance -- 5~6 times slower
+            * [ ] base layer
+            * [ ] beam optimization
+            * [ ] redirect rays
+        * API
+            * [ ] load `.vox` file
+* material (in `common-no-std`)
+    * [X] basic material in "One Weekend"
+    * [ ] volume fog material in "Next Week"
+    * [ ] `.vox` complete
+    * [ ] more physics based materials?
+* renderer (in `bosky`)
+    * [ ] **progressive rendering (Bevy `RenderGraph`)**
+    * [ ] realtime rendering with TAA or DLSS or???
+    * [ ] realtime rendering hardware API
 
 ## problems with rust-gpu
 
@@ -40,35 +60,11 @@ my graphics playground in Rust, using:
     * Ray Tracing in One Weekend: https://raytracing.github.io/
     * PBRT: https://www.pbrt.org/
     * GPU Wavefront Path Tracing: https://research.nvidia.com/sites/default/files/pubs/2013-07_Megakernels-Considered-Harmful/laine2013hpg_paper.pdf
+        * https://jacco.ompf2.com/2019/07/18/wavefront-path-tracing/
     * TAA: http://behindthepixels.io/assets/files/TemporalAA.pdf 
         * https://github.com/oskarbraten/voxel-path-tracer
-        * https://jacco.ompf2.com/2019/07/18/wavefront-path-tracing/
     * *more random ones bellow*
     * https://github.com/chunky-dev/chunky/
     * https://github.com/erichlof/THREE.js-PathTracing-Renderer
     * https://github.com/EmbarkStudios/kajiya
 
-
-
-## TODO
-
-* data structure
-    * ray traversal bugs
-        * [ ] infinie looping (white)
-        * [ ] there are red error codes with SDF scene
-        * [ ] 4^4 result in wrong stuff drawn
-    * performance
-        * [ ] compare with ESVO performance -- 5~6 times slower
-        * [ ] base layer
-        * [ ] beam optimization
-        * [ ] redirect rays
-    * API
-        * [ ] load `.vox` file
-* material
-    * [ ] volume fog material in "Next Week"
-    * [ ] `.vox` complete
-    * [ ] more physics based materials?
-* renderer
-    * [ ] **progressive rendering (Bevy `RenderGraph`)**
-    * [ ] realtime rendering with TAA or DLSS or???
-    * [ ] realtime rendering hardware API

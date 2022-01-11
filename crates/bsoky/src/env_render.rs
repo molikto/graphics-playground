@@ -10,20 +10,20 @@ use bevy::{
       renderer::RenderDevice, render_resource::*,
   },
 };
-use bsoky_no_std::MySvoMut;
-use common::math::svo::usvo;
+use bsoky_no_std::MySvtMut;
+use common::math::svt::usvt;
 
 
 #[derive(TypeUuid)]
 #[uuid = "4ee9c363-1124-4113-890e-199d81b00281"]
 pub struct CustomMaterial {
-    pub svo: MySvoMut
+    pub svt: MySvtMut
 }
 
 #[derive(Clone, TypeUuid)]
 #[uuid = "4ee9c363-1124-4113-890e-199d81b00281"]
 pub struct ExtractedCustomMaterial {
-    pub svo: Vec<usvo>
+    pub svt: Vec<usvt>
 }
 
 #[derive(Clone)]
@@ -38,7 +38,7 @@ impl RenderAsset for CustomMaterial {
     type Param = (SRes<RenderDevice>, SRes<MaterialPipeline<Self>>);
     fn extract_asset(&self) -> Self::ExtractedAsset {
         ExtractedCustomMaterial {
-            svo: self.svo.mem.clone()
+            svt: self.svt.mem.clone()
         }
     }
 
@@ -46,7 +46,7 @@ impl RenderAsset for CustomMaterial {
         extracted_asset: Self::ExtractedAsset,
         (render_device, material_pipeline): &mut SystemParamItem<Self::Param>,
     ) -> Result<Self::PreparedAsset, PrepareAssetError<Self::ExtractedAsset>> {
-        let contents: &[u8] = unsafe { extracted_asset.svo.as_slice().align_to::<u8>().1 };
+        let contents: &[u8] = unsafe { extracted_asset.svt.as_slice().align_to::<u8>().1 };
         let buffer = render_device.create_buffer_with_data(&BufferInitDescriptor {
             contents,
             label: None,
