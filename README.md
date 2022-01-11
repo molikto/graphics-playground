@@ -11,10 +11,6 @@ run with `cargo run -p bosky --release`
 
 * data structures (in `common-no-std`)
     * sparse voxel N-tree (`svt.rs`) and ray casting
-        * ray traversal bugs
-            * [ ] infinie looping (white)
-            * [ ] there are red error codes with SDF scene
-            * [ ] 4^4 result in wrong stuff drawn
         * performance
             * [ ] compare with ESVO performance -- 5~6 times slower
             * [ ] base layer

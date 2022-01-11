@@ -16,6 +16,20 @@ pub trait MyVecExt {
     fn new_axis(u: usize) -> Self;
 }
 
+pub trait MyUVecExt {
+    fn get(self, a: usize) -> u32;
+}
+
+impl MyUVecExt for UVec3 {
+    fn get(self, a: usize) -> u32 {
+        match a {
+            0 => self.x,
+            1 => self.y,
+            _ => self.z,
+        }
+    }
+}
+
 impl MyVecExt for Vec3 {
 
     fn step_f(self, other: f32) -> Self {
@@ -42,14 +56,10 @@ impl MyVecExt for Vec3 {
 
     #[inline]
     fn get(self, a: usize) -> f32 {
-        return if a == 0 {
-            self.x
-        } else if a == 1 {
-            self.y
-        } else if a == 2 {
-            self.z
-        } else {
-            panic!()
+        match a {
+            0 => self.x,
+            1 => self.y,
+            _ => self.z,
         }
     }
 
@@ -98,13 +108,10 @@ impl MyVecExt for Vec2 {
     
     #[inline]
     fn get(self, a: usize) -> f32 {
-        return if a == 0 {
-            self.x
-        } else if a == 1 {
-            self.y
-        } else {
-            panic!()
-        }
+        return match a {
+            0 => self.x,
+            _ => self.y,
+        };
     }
 
 }

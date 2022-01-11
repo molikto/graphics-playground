@@ -1,31 +1,31 @@
-macro_rules! unwrap_or_return {
-  ( $e:expr ) => {
-      match $e {
-          Some(x) => x,
-          None => return,
-      }
-  };
-}
+// macro_rules! unwrap_or_return {
+//   ( $e:expr ) => {
+//       match $e {
+//           Some(x) => x,
+//           None => return,
+//       }
+//   };
+// }
 
-macro_rules! true_or_return {
-  ( $e:expr ) => {
-      if !($e) {
-          return;
-      }
-  };
-}
+// macro_rules! true_or_return {
+//   ( $e:expr ) => {
+//       if !($e) {
+//           return;
+//       }
+//   };
+// }
 
 
-macro_rules! if_ret {
-  ($expr:expr, $body:expr) => {
-      if $expr {
-          $body;
-          true
-      } else {
-          false
-      }
-  };
-}
+// macro_rules! if_ret {
+//   ($expr:expr, $body:expr) => {
+//       if $expr {
+//           $body;
+//           true
+//       } else {
+//           false
+//       }
+//   };
+// }
 
 pub unsafe fn very_bad_function<T>(reference: &T) -> &mut T {
   let const_ptr = reference as *const T;

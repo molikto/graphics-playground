@@ -1,9 +1,22 @@
 use bsoky_no_std::*;
 use common_no_std::{
     material::*,
-    svt::{usvt, BlockRayIntersectionInfo, Svt},
+    svt::{usvt, BlockRayIntersectionInfo},
     *,
 };
+
+#[derive(PartialEq, Eq)]
+pub enum RenderMode {
+    RayTracing,
+    DotNShading,
+    Iteration,
+}
+
+pub const RENDER_MODE: RenderMode = RenderMode::RayTracing;
+
+const MAX_RAY_DEPTH: u32 = 4;
+
+pub const MAX_ITERATION: u32 = 400;
 
 // from Ray Tracing in One Weekend
 pub fn skybox0(ray: &Ray3) -> Vec3 {
@@ -12,7 +25,6 @@ pub fn skybox0(ray: &Ray3) -> Vec3 {
     (1.0 - t) * Vec3::new(1.0, 1.0, 1.0) + t * Vec3::new(0.5, 0.7, 1.0)
 }
 
-const MAX_RAY_DEPTH: u32 = 4;
 pub fn shade_ray(rng: &mut SRng, svt: MySvt, mut current_ray: Ray3) -> Vec3 {
     let material1 = Lambertian {
         albedo: RgbLinear(vec3(0.4, 0.1, 0.4)),
@@ -21,9 +33,7 @@ pub fn shade_ray(rng: &mut SRng, svt: MySvt, mut current_ray: Ray3) -> Vec3 {
         albedo: RgbLinear(vec3(0.9, 0.3, 0.4)),
         fuzz: 0.1,
     };
-    let material3 = Dielectric {
-        ref_idx: 1.5
-    };
+    let material3 = Dielectric { ref_idx: 1.5 };
     let mut accumulate_attenuation = Vec3::ONE;
     for _ in 0..MAX_RAY_DEPTH {
         let mut final_in_info: BlockRayIntersectionInfo = BlockRayIntersectionInfo {
@@ -31,7 +41,7 @@ pub fn shade_ray(rng: &mut SRng, svt: MySvt, mut current_ray: Ray3) -> Vec3 {
             t: -1.0,
         };
         let mut material_index: usvt = 0;
-        let error_code = svt.traverse_ray(400, current_ray, |in_info, _, info| {
+        let error_code = svt.traverse_ray(MAX_ITERATION, current_ray, |in_info, _, info| {
             if info.data != 0 {
                 final_in_info = in_info;
                 material_index = info.data;
@@ -43,17 +53,13 @@ pub fn shade_ray(rng: &mut SRng, svt: MySvt, mut current_ray: Ray3) -> Vec3 {
         if error_code < 0 {
             return MySvt::debug_error_code_colors(error_code);
         } else {
-            // debug how much voxel get traveled
-            let count = error_code as f32;
-            return Vec3::splat((count) / 400.0);
-
-            // debug levels
-            // return Vec3::splat((count) / 1000.0);
-
-            // simple debug light levels
-            // let light_level = vec3(0.6, 0.75, 1.0);
-            // return vec3( 0.8,0.7, 0.5) * (light_level.dot(hit_mask.abs()));
-
+            if RENDER_MODE == RenderMode::Iteration {
+                let count = error_code as f32;
+                return Vec3::splat((count) / (MAX_ITERATION as f32));
+            } else if RENDER_MODE == RenderMode::DotNShading {
+                let light_level = vec3(0.6, 0.75, 1.0);
+                return vec3( 0.8,0.7, 0.5) * (light_level.dot(final_in_info.mask.abs()));
+            }
             // no hit, use sky box color
             if final_in_info.t == -1.0 {
                 return accumulate_attenuation * skybox0(&current_ray);

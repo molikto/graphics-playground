@@ -38,6 +38,7 @@ fn main() {
         "spirv-unknown-spv1.5",
     )
     .capability(spirv_builder::Capability::Int16)
+    .capability(spirv_builder::Capability::Int8)
     .print_metadata(MetadataPrintout::Full)
     .build()
     .unwrap();

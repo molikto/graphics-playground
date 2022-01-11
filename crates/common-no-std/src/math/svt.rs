@@ -5,9 +5,9 @@ use crate::Aabb3;
 use super::ray::*;
 use super::vec::*;
 
+#[allow(non_camel_case_types)]
 // pub type usvt = u16;
 // pub type Usvt3 = SUVec3;
-
 pub type usvt = u32;
 pub type Usvt3 = UVec3;
 
@@ -161,7 +161,7 @@ impl<REF: Deref<Target = [usvt]>, const BLOCK_DIM: usvt, const LEVEL_COUNT: usiz
     }
 
     #[inline]
-    pub fn traverse_ray<C>(&self, max_count: i32, mut ray: Ray3, mut closure: C) -> i32
+    pub fn traverse_ray<C>(&self, max_count: u32, mut ray: Ray3, mut closure: C) -> i32
     where
         C: FnMut(
             BlockRayIntersectionInfo,
@@ -169,7 +169,7 @@ impl<REF: Deref<Target = [usvt]>, const BLOCK_DIM: usvt, const LEVEL_COUNT: usiz
             BlockInfo<BLOCK_DIM, LEVEL_COUNT>,
         ) -> bool,
     {
-        let mut count = 0;
+        let mut count: u32 = 0;
         // TODO there are still cases where it infinite loop..
         // the max dim we can have is 8^8, otherwise it will not work because of floating point issue
         // https://itectec.com/matlab-ref/matlab-function-flintmax-largest-consecutive-integer-in-floating-point-format/
@@ -207,17 +207,12 @@ impl<REF: Deref<Target = [usvt]>, const BLOCK_DIM: usvt, const LEVEL_COUNT: usiz
         //
         // block aabbs is terminal block
         let mut level: usvt = 0;
-        let mut position_up = Usvt3::ZERO;
         let mut level_dim_div = total_dim / BLOCK_DIM;
         // go inside levels
         let mut level_position_abs: Usvt3;
         let mut index: usvt;
         loop {
             let position_u = vec3_to_usvt3(position);
-            if position_u == position_up {
-                return -4;
-            }
-            position_up = position_u;
             loop {
                 level_position_abs = position_u / level_dim_div;
                 let level_position = level_position_abs % BLOCK_DIM;
@@ -233,7 +228,8 @@ impl<REF: Deref<Target = [usvt]>, const BLOCK_DIM: usvt, const LEVEL_COUNT: usiz
                     let incident = BlockRayIntersectionInfo { t, mask };
                     // TODO this fixes some problem of inifinite looping
                     // set mask later, because we want to know the mask of the enter face
-                    t = if ts_min < t { t + 0.01 } else { ts_min };
+                    // t = if ts_min < t { t + 0.0001 } else { ts_min };
+                    t = ts_min;
                     mask = ts.step_f(t) * ray_dir_signum;
                     if mask == Vec3::ZERO {
                         return -2;
@@ -245,7 +241,7 @@ impl<REF: Deref<Target = [usvt]>, const BLOCK_DIM: usvt, const LEVEL_COUNT: usiz
                     };
                     let ret = closure(incident, BlockRayIntersectionInfo { t, mask }, block_info);
                     if ret {
-                        return count;
+                        return count as i32;
                     }
                     break;
                 } else {
@@ -255,10 +251,24 @@ impl<REF: Deref<Target = [usvt]>, const BLOCK_DIM: usvt, const LEVEL_COUNT: usiz
                     block_indexs[level as usize] = index as usize * (Self::BLOCK_SIZE as usize);
                 }
             }
-
-            // this floating point position is because we use unsigned position_u, it's actually value doesn't mater that much
             // we add extra value so we don't step on the boundary. `position = ray.at(t + 0.01)` doesn't work
-            position = ray.at(t) + mask * 0.5;
+            let position_new = ray.at(t) + mask * 0.5;
+            // comparing `t = if ts_min < t { t + 0.0001 } else { ts_min };` doesn't work!! needs to do it like bellow
+            position.x = if ray_dir_signum.x > 0.0 {
+                position.x.max(position_new.x)
+            } else {
+                position.x.min(position_new.x)
+            };
+            position.y = if ray_dir_signum.y > 0.0 {
+                position.y.max(position_new.y)
+            } else {
+                position.y.min(position_new.y)
+            };
+            position.z = if ray_dir_signum.z > 0.0 {
+                position.z.max(position_new.z)
+            } else {
+                position.z.min(position_new.z)
+            };
             count += 1;
             if count > max_count {
                 return -1;
@@ -268,7 +278,7 @@ impl<REF: Deref<Target = [usvt]>, const BLOCK_DIM: usvt, const LEVEL_COUNT: usiz
                 if t < block_limit {
                     break;
                 } else if level == 0 {
-                    return count;
+                    return count as i32;
                 } else {
                     level -= 1;
                     level_dim_div *= BLOCK_DIM;
@@ -450,7 +460,6 @@ mod tests {
 
     #[test]
     fn simple_debug() {
-        println!("fds");
         let mut svt = MySvt::init(0);
         let size = (MySvt::total_dim() - 10) as f32;
         let mut rng = rand::thread_rng();
@@ -464,14 +473,14 @@ mod tests {
                 300,
                 Ray3 {
                     pos: vec3(rng.gen(), rng.gen(), rng.gen()) * size,
-                    dir: vec3(rng.gen(), rng.gen(), rng.gen()) * size,
+                    dir: vec3(rng.gen(), rng.gen(), rng.gen()) * size * 2.0 - Vec3::splat(size),
                 },
                 |t_hit, block, mask| {
                     return false;
                 },
             );
             if error_code < 0 {
-                println!("{}", error_code);
+                panic!();
             }
         }
     }
