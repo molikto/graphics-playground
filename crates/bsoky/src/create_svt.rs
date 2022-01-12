@@ -48,7 +48,7 @@ pub fn debug_create_sdf() -> MySvtMut {
         .subtract(sdfu::Box::new(Vec3A::new(0.2, 2.0, 0.2)))
         .scale(0.5)
         .translate(Vec3A::new(0.5, 0.5, 0.5));
-    let total_size = MySvtMut::total_dim() as f32;
+    let total_size = MySvtMut::TOTAL_DIM as f32;
     for level in 0..LEVEL_COUNT as usvt {
         let level_cap = level + 1;
         let level_dim = BLOCK_DIM.pow(level_cap as u32);

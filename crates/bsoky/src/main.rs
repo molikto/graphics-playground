@@ -29,8 +29,8 @@ fn create_simple_debug_objects(
     mut materials: ResMut<Assets<CustomMaterial>>,
 ) {
     let svt = create_svt::debug_create_rsvo();
-    println!("total dim {}\nblock count {}\nmemory used {}\nmemory ratio {}", MySvtMut::total_dim(), svt.block_count(), svt.memory_used(), svt.memory_ratio());
-    let total_size = MySvtMut::total_dim() as f32;
+    println!("total dim {}\nblock count {}\nmemory used {}\nmemory ratio {}", MySvtMut::TOTAL_DIM, svt.block_count(), svt.memory_used(), svt.memory_ratio());
+    let total_size = MySvtMut::TOTAL_DIM as f32;
     let mesh = meshes.add(RevertBox::zero_with_size(Vec3::splat(total_size)).into());
     let material = materials.add(CustomMaterial { svt });
     commands.spawn_bundle(MaterialMeshBundle::<CustomMaterial> {
@@ -42,7 +42,7 @@ fn create_simple_debug_objects(
 
 fn main() {
     //simulation_benchmark();
-    let half_size = (MySvtMut::total_dim() / 2) as f32;
+    let half_size = (MySvtMut::TOTAL_DIM / 2) as f32;
     App::new()
         .insert_resource(Msaa {  samples: 1 })
         .insert_resource(WgpuOptions {

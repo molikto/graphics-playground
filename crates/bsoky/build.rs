@@ -1,4 +1,4 @@
-use spirv_builder::{MetadataPrintout, SpirvBuilder};
+use spirv_builder::{MetadataPrintout, SpirvBuilder, SpirvMetadata};
 use std::{env, fs, path::{Path, PathBuf}};
 
 fn cwd() -> PathBuf {
@@ -40,6 +40,8 @@ fn main() {
     .capability(spirv_builder::Capability::Int16)
     .capability(spirv_builder::Capability::Int8)
     .print_metadata(MetadataPrintout::Full)
+    .spirv_metadata(SpirvMetadata::Full)
+    .release(true)
     .build()
     .unwrap();
     let path = shader_result.module.unwrap_single();

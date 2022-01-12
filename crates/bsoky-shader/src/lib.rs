@@ -65,7 +65,7 @@ pub fn fragment(
     output: &mut Vec4,
 ) {
     let svt = MySvt { mem: svt };
-    let total_dim = MySvt::total_dim() as f32;
+    let total_dim = MySvt::TOTAL_DIM as f32;
     let map_size = Vec3::splat(total_dim);
     let frag_world_position = frag_world_position_from_face(from_simulation_coor(map_size), face, uv);
 

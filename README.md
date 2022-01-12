@@ -10,10 +10,10 @@ run with `cargo run -p bosky --release`
 ## done and TODOs
 
 * data structures (in `common-no-std`)
-    * sparse voxel N-tree (`svt.rs`) and ray casting
+    * sparse voxel N-tree (`svt.rs`) and ray casting: no children masks, each voxel is 4 byte pointer or data
         * performance
-            * [ ] compare with ESVO performance -- 5~6 times slower
-            * [ ] base layer
+            * [X] compare with ESVO performance -- see [here](crates/common-no-std/SVT_PERF.md) (~5 times slower)
+            * [ ] optimize it to be faster
             * [ ] beam optimization
             * [ ] redirect rays
         * API

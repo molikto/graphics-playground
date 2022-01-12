@@ -1,4 +1,49 @@
 
+
+## compared to ESVO code
+
+level 10 sibenik scene
+
+```
+              wavefront duration    occupancy (vector register, scalar register)  FPS            memory
+bf refacotor  90                    3/20 (120, 60)                                (60 fps ish)
+af refacotor: 56                    2/20 (142,60)                                 (60 fps ish)   82.5MB
+es: 3ms       30                    5/20 (86,46)                                  (280fps ish)   51MB
+```
+
+5 times more thread excuation
+
+one wired thing is using u16 uses more vector register so worse perf
+
+
+beam optimization can get more frames, especially in small fov
+
+
+## compare block size
+
+2^10
+
+total dim 1024
+block count 1720910
+memory ratio 0.051287144
+time: 30ms
+
+4^4
+total dim 1024
+block count 338043
+memory used 86539264
+memory ratio 0.08059597
+time: 23ms
+
+8^4 is slower, but I don't have ways to benchmark like 3^N or 5^n configrations yet.
+
+=======================
+
+
+older
+
+
+
 the u16 version can handle max block of 2^15=32768 blocks, it cannot handle 2^9 or 4^5 scene...
 
 tests:
@@ -73,18 +118,3 @@ block count 76256
 memory used 156174336
 memory ratio 0.0022726357
 avg 0.037229s
-
-## compared to ESVO code
-
-
-level 10 
-           wavefront duration    occupancy
-my: 16ms   92                    3/20         (60 fps ish)   82.5MB
-es: 3ms    30                    5/20         (280fps ish)   51MB
-
-5 times more thread excuation
-
-one wired thing is using u16 uses more vector register so worse perf
-
-
-beam optimization can get more frames, especially in small fov
