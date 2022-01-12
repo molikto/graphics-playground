@@ -138,9 +138,11 @@ impl MyVec2Ext for Vec2 {
 pub trait MyVec3Ext {
     fn omit_axis(self, a: usize) -> Vec2;
     fn reflect(self, normal: Self) -> Self;
+    fn sin(self) -> Vec3;
 }
 
 impl MyVec3Ext for Vec3 {
+
     #[inline]
     fn omit_axis(self, a: usize) -> Vec2 {
         if a == 0 {
@@ -156,6 +158,10 @@ impl MyVec3Ext for Vec3 {
 
     fn reflect(self, normal: Vec3) -> Self {
         self - 2.0 * normal * self.dot(normal)
+    }
+
+    fn sin(self) -> Vec3 {
+        Self::new(self.x.sin(), self.y.sin(), self.z.sin())
     }
 }
 

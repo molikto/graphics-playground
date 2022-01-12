@@ -79,10 +79,12 @@ avg 0.037229s
 
 level 10 
            wavefront duration    occupancy
-my: 16ms   92                    3   (60 fps ish)   82.5MB
-es: 3ms    30                    5   (280fps ish)   51MB
+my: 16ms   92                    3/20         (60 fps ish)   82.5MB
+es: 3ms    30                    5/20         (280fps ish)   51MB
 
 5 times more thread excuation
+
+one wired thing is using u16 uses more vector register so worse perf
 
 
 beam optimization can get more frames, especially in small fov

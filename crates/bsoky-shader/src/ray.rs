@@ -2,7 +2,7 @@ use bsoky_no_std::*;
 use common_no_std::{
     material::*,
     svt::{usvt, BlockRayIntersectionInfo},
-    *,
+    *, shader::heat,
 };
 
 #[derive(PartialEq, Eq)]
@@ -16,7 +16,7 @@ pub const RENDER_MODE: RenderMode = RenderMode::Iteration;
 
 const MAX_RAY_DEPTH: u32 = 4;
 
-pub const MAX_ITERATION: u32 = 400;
+pub const MAX_ITERATION: u32 = 128;
 
 // from Ray Tracing in One Weekend
 pub fn skybox0(ray: &Ray3) -> Vec3 {
@@ -56,6 +56,7 @@ pub fn shade_ray(rng: &mut SRng, svt: MySvt, mut current_ray: Ray3) -> Vec3 {
             if RENDER_MODE == RenderMode::Iteration {
                 let count = error_code as f32;
                 return Vec3::splat((count) / (MAX_ITERATION as f32));
+                //return heat::heat((count) / (MAX_ITERATION as f32));
             } else if RENDER_MODE == RenderMode::DotNShading {
                 let light_level = vec3(0.6, 0.75, 1.0);
                 return vec3(0.8, 0.7, 0.5) * (light_level.dot(final_in_info.mask.abs()));

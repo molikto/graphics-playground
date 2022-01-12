@@ -21,7 +21,6 @@ pub struct BlockRayIntersectionInfo {
 }
 
 pub struct BlockInfo<const BLOCK_DIM: usvt, const LEVEL_COUNT: usize> {
-    pub level_position_abs: Usvt3,
     pub level: usvt,
     pub data: usvt,
 }
@@ -67,9 +66,10 @@ impl<REF: Deref<Target = [usvt]>, const BLOCK_DIM: usvt, const LEVEL_COUNT: usiz
     Svt<REF, BLOCK_DIM, LEVEL_COUNT>
 {
     const BLOCK_SIZE: usvt = BLOCK_DIM * BLOCK_DIM * BLOCK_DIM;
+    const TOTAL_DIM: usvt = BLOCK_DIM.pow(LEVEL_COUNT as usvt);
 
     pub fn total_dim() -> usvt {
-        BLOCK_DIM.pow(LEVEL_COUNT as u32)
+        Self::TOTAL_DIM
     }
 
     // TODO memory allocation
@@ -184,12 +184,13 @@ impl<REF: Deref<Target = [usvt]>, const BLOCK_DIM: usvt, const LEVEL_COUNT: usiz
         let ray_dir_limit_mul = (ray_dir_signum + 1.0) / 2.0;
         let total_dim = Self::total_dim();
         let total_dim_f = total_dim as f32;
-        let aabb = Aabb3::new(Vec3::ZERO, Vec3::splat(total_dim_f));
+
         let mut mask: Vec3;
         let mut position: Vec3;
+        // let aabb = Aabb3::new(Vec3::ZERO, Vec3::splat(total_dim_f));
+        // if aabb.inside(ray.pos) {
         mask = Vec3::ZERO;
         position = ray.pos;
-        // if aabb.inside(ray.pos) {
         // } else {
         //     let hit = aabb.hit(&ray, 0.0, 100000000000.0);
         //     mask = hit.nor;
@@ -235,7 +236,6 @@ impl<REF: Deref<Target = [usvt]>, const BLOCK_DIM: usvt, const LEVEL_COUNT: usiz
                         return -2;
                     }
                     let block_info = BlockInfo {
-                        level_position_abs,
                         level,
                         data: index,
                     };
