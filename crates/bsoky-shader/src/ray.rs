@@ -12,7 +12,7 @@ pub enum RenderMode {
     Iteration,
 }
 
-pub const RENDER_MODE: RenderMode = RenderMode::RayTracing;
+pub const RENDER_MODE: RenderMode = RenderMode::Iteration;
 
 const MAX_RAY_DEPTH: u32 = 4;
 
@@ -58,33 +58,34 @@ pub fn shade_ray(rng: &mut SRng, svt: MySvt, mut current_ray: Ray3) -> Vec3 {
                 return Vec3::splat((count) / (MAX_ITERATION as f32));
             } else if RENDER_MODE == RenderMode::DotNShading {
                 let light_level = vec3(0.6, 0.75, 1.0);
-                return vec3( 0.8,0.7, 0.5) * (light_level.dot(final_in_info.mask.abs()));
-            }
-            // no hit, use sky box color
-            if final_in_info.t == -1.0 {
-                return accumulate_attenuation * skybox0(&current_ray);
+                return vec3(0.8, 0.7, 0.5) * (light_level.dot(final_in_info.mask.abs()));
             } else {
-                let hit_record = HitRecord3 {
-                    is_hit: true,
-                    t: final_in_info.t,
-                    from_outside: true,
-                    nor: -final_in_info.mask,
-                };
-                let mut interaction: MaterialInteraction;
-                if material_index == 1 {
-                    interaction = material1.scatter(rng, current_ray, hit_record);
-                } else if material_index == 2 {
-                    interaction = material2.scatter(rng, current_ray, hit_record);
+                // no hit, use sky box color
+                if final_in_info.t == -1.0 {
+                    return accumulate_attenuation * skybox0(&current_ray);
                 } else {
-                    interaction = material3.scatter(rng, current_ray, hit_record);
-                };
-                match interaction {
-                    MaterialInteraction { attenuation, ray } => {
-                        accumulate_attenuation = accumulate_attenuation * attenuation.0;
-                        current_ray = ray;
-                        current_ray.advance(0.001); // TOOD is this correct? "Fixing Shadow Acne" in "Ray Tracing in One Weekend"?
-                    }
-                };
+                    let hit_record = HitRecord3 {
+                        is_hit: true,
+                        t: final_in_info.t,
+                        from_outside: true,
+                        nor: -final_in_info.mask,
+                    };
+                    let mut interaction: MaterialInteraction;
+                    if material_index == 1 {
+                        interaction = material1.scatter(rng, current_ray, hit_record);
+                    } else if material_index == 2 {
+                        interaction = material2.scatter(rng, current_ray, hit_record);
+                    } else {
+                        interaction = material3.scatter(rng, current_ray, hit_record);
+                    };
+                    match interaction {
+                        MaterialInteraction { attenuation, ray } => {
+                            accumulate_attenuation = accumulate_attenuation * attenuation.0;
+                            current_ray = ray;
+                            current_ray.advance(0.001); // TOOD is this correct? "Fixing Shadow Acne" in "Ray Tracing in One Weekend"?
+                        }
+                    };
+                }
             }
         }
     }

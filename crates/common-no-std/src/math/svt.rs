@@ -187,14 +187,14 @@ impl<REF: Deref<Target = [usvt]>, const BLOCK_DIM: usvt, const LEVEL_COUNT: usiz
         let aabb = Aabb3::new(Vec3::ZERO, Vec3::splat(total_dim_f));
         let mut mask: Vec3;
         let mut position: Vec3;
-        if aabb.inside(ray.pos) {
-            mask = Vec3::ZERO;
-            position = ray.pos;
-        } else {
-            let hit = aabb.hit(&ray, 0.0, 100000000000.0);
-            mask = hit.nor;
-            position = ray.at(hit.t + 0.0001);
-        }
+        mask = Vec3::ZERO;
+        position = ray.pos;
+        // if aabb.inside(ray.pos) {
+        // } else {
+        //     let hit = aabb.hit(&ray, 0.0, 100000000000.0);
+        //     mask = hit.nor;
+        //     position = ray.at(hit.t + 0.0001);
+        // }
         let mut t = 0 as f32;
         let mut block_indexs = [0usize; LEVEL_COUNT];
         block_indexs[0] = self.root_block_index() * (Self::BLOCK_SIZE as usize);

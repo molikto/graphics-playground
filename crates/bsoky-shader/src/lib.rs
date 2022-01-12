@@ -81,10 +81,6 @@ pub fn fragment(
         pos: to_simulation_coor(view.world_position),
         dir: to_simulation_coor(frag_world_position - view.world_position)
     };
-    ray.dir = ray.dir.normalize_or_zero();
-    if ray.dir == Vec3::ZERO {
-        ray.dir = vec3(1.0, 0.0, 0.0);
-    }
     let env_color = ray::shade_ray(&mut rng, svt, ray);
 
     // let color = clamp(env_color, Vec4(0.0), Vec4(1.0));
