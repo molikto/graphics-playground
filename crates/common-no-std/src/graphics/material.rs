@@ -27,7 +27,7 @@ pub struct Lambertian {
     pub albedo: RgbLinear,
 }
 
-const LAMBERTIAN_SCATTER: u8 = 1;
+const LAMBERTIAN_SCATTER: u32 = 1;
 
 impl AbstractMaterial for Lambertian {
     fn scatter(self, rng: &mut SRng, ray: Ray3, hit: HitRecord3) -> MaterialInteraction {

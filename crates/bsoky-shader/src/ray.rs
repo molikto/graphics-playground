@@ -6,6 +6,7 @@ use common_no_std::{
 };
 
 #[derive(PartialEq, Eq)]
+#[repr(C)]
 pub enum RenderMode {
     RayTracing,
     DotNShading,
