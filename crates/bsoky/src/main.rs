@@ -8,7 +8,7 @@ use bevy::{
     pbr::{MaterialMeshBundle, MaterialPlugin},
     prelude::{App, Assets, Commands, ResMut, Msaa},
     render::{
-        mesh::{Mesh}, options::{WgpuOptions, Backends}, render_resource::WgpuLimits,
+        mesh::{Mesh}, options::{WgpuOptions, Backends}, render_resource::{WgpuLimits, WgpuFeatures},
     },
     window::WindowDescriptor,
     DefaultPlugins,
@@ -46,6 +46,7 @@ fn main() {
     App::new()
         .insert_resource(Msaa {  samples: 1 })
         .insert_resource(WgpuOptions {
+            features: WgpuFeatures::PUSH_CONSTANTS,
             backends: Some(Backends::VULKAN),
             limits: WgpuLimits {
                 max_storage_buffer_binding_size: 4000000000,
@@ -54,6 +55,8 @@ fn main() {
             ..Default::default()
         })
         .insert_resource(WindowDescriptor {
+            // width: 1920.0,
+            // height: 1080.0,
             width: 1080.0,
             height: 720.0,
             title: "codename: bsoky".into(),

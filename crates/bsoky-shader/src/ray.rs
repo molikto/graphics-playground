@@ -13,7 +13,7 @@ pub enum RenderMode {
     Iteration,
 }
 
-pub const RENDER_MODE: RenderMode = RenderMode::Iteration;
+pub const RENDER_MODE: RenderMode = RenderMode::RayTracing;
 
 const MAX_RAY_DEPTH: u32 = 4;
 

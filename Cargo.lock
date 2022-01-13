@@ -877,6 +877,7 @@ dependencies = [
  "bevy",
  "bevy-common",
  "bevy-inspector-egui",
+ "bevy_crevice 0.6.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "bevy_egui",
  "bsoky-no-std",
  "common",
@@ -910,7 +911,9 @@ dependencies = [
 name = "bsoky-no-std"
 version = "0.1.0"
 dependencies = [
+ "bevy_crevice 0.6.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "common-no-std",
+ "glam",
 ]
 
 [[package]]

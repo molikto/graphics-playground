@@ -58,6 +58,7 @@ pub fn frag_world_position_from_face(map_size: Vec3, face: u32, uv: Vec2) -> Vec
 pub fn fragment(
     #[spirv(frag_coord)]
     in_frag_coord: Vec4,
+    #[spirv(push_constant)] constants: &EnvShaderUniform,
     #[spirv(uniform, descriptor_set = 0, binding = 0)] view: &ViewUniform,
     #[spirv(storage_buffer, descriptor_set = 1, binding = 0)] svt: &[usvt],
     #[spirv(flat)] face: u32,
@@ -74,7 +75,7 @@ pub fn fragment(
     // *output = Vec3::splat(distance / (total_dim as f32)).extend(1.0);
     // return;
 
-    let seed = in_frag_coord.xy();// + Vec2::splat(constants.rng_seed_offset);
+    let seed = in_frag_coord.xy() + constants.time;
     let mut rng = SRng { seed };
 
     let mut ray = Ray3 {

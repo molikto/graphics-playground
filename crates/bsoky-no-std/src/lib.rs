@@ -2,10 +2,10 @@
 
 use common_no_std::{*, svt::*};
 
-pub const BLOCK_DIM: usvt = 2;
-pub const LEVEL_COUNT: usize = 10;
-// pub const BLOCK_DIM: usvt = 4;
-// pub const LEVEL_COUNT: usize = 5;
+// pub const BLOCK_DIM: usvt = 2;
+// pub const LEVEL_COUNT: usize = 10;
+pub const BLOCK_DIM: usvt = 4;
+pub const LEVEL_COUNT: usize = 5;
 
 #[cfg(target_arch = "spirv")]
 pub type MySvt<'a>  = Svt<&'a [usvt], BLOCK_DIM, LEVEL_COUNT>;
@@ -23,4 +23,9 @@ pub fn to_simulation_coor(v: Vec3) -> Vec3 {
 pub fn from_simulation_coor(v: Vec3) -> Vec3 {
     return v;
     //Vec3::new(v[0] * BLOCK_RENDER_SIZE, v[2] * BLOCK_RENDER_SIZE, v[1] * BLOCK_RENDER_SIZE)
+}
+
+#[cfg_attr(not(target_arch = "spirv"), derive(bevy_crevice::std430::AsStd430))]
+pub struct EnvShaderUniform {
+    pub time: f32
 }

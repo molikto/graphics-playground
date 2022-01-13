@@ -5,3 +5,7 @@ edition = "2021"
 
 [dependencies]
 common-no-std = { path="../common-no-std" }
+
+[target.'cfg(not(target_arch = "spirv"))'.dependencies]
+glam = { version = "0.20", features = ["bytemuck"] }
+bevy_crevice = { version = "0.6.0", features=["glam" ] }
