@@ -11,9 +11,10 @@ use bevy::{
         renderer::RenderDevice, render_phase::TrackedRenderPass,
     }, utils::Instant,
 };
+use bevy_common::RevertBox;
 use bsoky_no_std::*;
-use bevy_crevice::std430::*;
 use common::math::svt::usvt;
+use common::math::vec::Vec3;
 
 #[derive(TypeUuid)]
 #[uuid = "4ee9c363-1124-4113-890e-199d81b00281"]
@@ -78,14 +79,6 @@ impl Material for CustomMaterial {
         Some(asset_server.load(Path::new("env").join("shader.spv")))
     }
 
-    fn before_render(pass: &mut TrackedRenderPass) {
-        let constant_content = EnvShaderUniform {
-            time: Instant::now().elapsed().as_millis() as f32
-        };
-        pass.set_push_constants(ShaderStages::FRAGMENT, 0, &constant_content.as_std430().as_bytes());
-    }
-
-
     fn bind_group(render_asset: &<Self as RenderAsset>::PreparedAsset) -> &BindGroup {
         &render_asset.bind_group
     }
@@ -107,4 +100,30 @@ impl Material for CustomMaterial {
             label: None,
         })
     }
+}
+
+
+pub struct EnvRenderPlugin;
+
+impl Plugin for EnvRenderPlugin {
+    fn build(&self, app: &mut App) {
+        app.add_plugin(MaterialPlugin::<CustomMaterial>::default())
+        .add_startup_system(create_simple_debug_objects);
+    }
+}
+
+fn create_simple_debug_objects(
+    mut commands: Commands,
+    mut meshes: ResMut<Assets<Mesh>>,
+    mut materials: ResMut<Assets<CustomMaterial>>,
+) {
+    let svt = super::create_svt::debug_create_sdf();
+    println!("total dim {}\nblock count {}\nmemory used {}\nmemory ratio {}", MySvtMut::TOTAL_DIM, svt.block_count(), svt.memory_used(), svt.memory_ratio());
+    let mesh = meshes.add(RevertBox::zero_with_size(Vec3::splat(MySvtMut::TOTAL_DIM as f32)).into());
+    let material = materials.add(CustomMaterial { svt });
+    commands.spawn_bundle(MaterialMeshBundle::<CustomMaterial> {
+        mesh,
+        material,
+        ..Default::default()
+    });
 }

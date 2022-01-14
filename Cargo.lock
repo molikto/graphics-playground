@@ -221,21 +221,9 @@ dependencies = [
 [[package]]
 name = "bevy-crevice-derive"
 version = "0.6.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d4cf594c9277eb1e426f45a00eaf70aa9ffdf479268d7e4538270263811e20bc"
-dependencies = [
- "bevy_macro_utils 0.6.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "proc-macro2",
- "quote",
- "syn",
-]
-
-[[package]]
-name = "bevy-crevice-derive"
-version = "0.6.0"
 source = "git+https://github.com/molikto/bevy?branch=shader-bypass#5e299e6d718c3052762cb07db7a783212bf568c1"
 dependencies = [
- "bevy_macro_utils 0.6.0 (git+https://github.com/molikto/bevy?branch=shader-bypass)",
+ "bevy_macro_utils",
  "proc-macro2",
  "quote",
  "syn",
@@ -351,21 +339,9 @@ dependencies = [
 [[package]]
 name = "bevy_crevice"
 version = "0.6.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "06d3eeb3237df793e8e01a110ee71824eacd15421821f9b175f3bafca864614c"
-dependencies = [
- "bevy-crevice-derive 0.6.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "bytemuck",
- "glam",
- "mint",
-]
-
-[[package]]
-name = "bevy_crevice"
-version = "0.6.0"
 source = "git+https://github.com/molikto/bevy?branch=shader-bypass#5e299e6d718c3052762cb07db7a783212bf568c1"
 dependencies = [
- "bevy-crevice-derive 0.6.0 (git+https://github.com/molikto/bevy?branch=shader-bypass)",
+ "bevy-crevice-derive",
  "bytemuck",
  "glam",
  "mint",
@@ -376,7 +352,7 @@ name = "bevy_derive"
 version = "0.6.0"
 source = "git+https://github.com/molikto/bevy?branch=shader-bypass#5e299e6d718c3052762cb07db7a783212bf568c1"
 dependencies = [
- "bevy_macro_utils 0.6.0 (git+https://github.com/molikto/bevy?branch=shader-bypass)",
+ "bevy_macro_utils",
  "quote",
  "syn",
 ]
@@ -415,7 +391,7 @@ name = "bevy_ecs_macros"
 version = "0.6.0"
 source = "git+https://github.com/molikto/bevy?branch=shader-bypass#5e299e6d718c3052762cb07db7a783212bf568c1"
 dependencies = [
- "bevy_macro_utils 0.6.0 (git+https://github.com/molikto/bevy?branch=shader-bypass)",
+ "bevy_macro_utils",
  "proc-macro2",
  "quote",
  "syn",
@@ -534,17 +510,6 @@ dependencies = [
 [[package]]
 name = "bevy_macro_utils"
 version = "0.6.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "57cf90b3b67606d0818cdac6c9134eb66fa174959977a4abba893364a571a7cd"
-dependencies = [
- "cargo-manifest",
- "quote",
- "syn",
-]
-
-[[package]]
-name = "bevy_macro_utils"
-version = "0.6.0"
 source = "git+https://github.com/molikto/bevy?branch=shader-bypass#5e299e6d718c3052762cb07db7a783212bf568c1"
 dependencies = [
  "cargo-manifest",
@@ -602,7 +567,7 @@ name = "bevy_reflect_derive"
 version = "0.6.0"
 source = "git+https://github.com/molikto/bevy?branch=shader-bypass#5e299e6d718c3052762cb07db7a783212bf568c1"
 dependencies = [
- "bevy_macro_utils 0.6.0 (git+https://github.com/molikto/bevy?branch=shader-bypass)",
+ "bevy_macro_utils",
  "proc-macro2",
  "quote",
  "syn",
@@ -618,7 +583,7 @@ dependencies = [
  "bevy_app",
  "bevy_asset",
  "bevy_core",
- "bevy_crevice 0.6.0 (git+https://github.com/molikto/bevy?branch=shader-bypass)",
+ "bevy_crevice",
  "bevy_derive",
  "bevy_ecs",
  "bevy_math",
@@ -877,7 +842,7 @@ dependencies = [
  "bevy",
  "bevy-common",
  "bevy-inspector-egui",
- "bevy_crevice 0.6.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "bevy_crevice",
  "bevy_egui",
  "bsoky-no-std",
  "common",
@@ -905,13 +870,14 @@ dependencies = [
  "spirv-builder",
  "transmute",
  "variant_count",
+ "wgpu",
 ]
 
 [[package]]
 name = "bsoky-no-std"
 version = "0.1.0"
 dependencies = [
- "bevy_crevice 0.6.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "bevy_crevice",
  "common-no-std",
  "glam",
 ]
@@ -1126,7 +1092,7 @@ dependencies = [
 name = "common-no-std"
 version = "0.1.0"
 dependencies = [
- "bevy_crevice 0.6.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "bevy_crevice",
  "bytemuck",
  "glam",
  "image",

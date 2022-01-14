@@ -30,6 +30,7 @@ env_logger = "0.9"
 noise = "0.7"
 morton-encoding = "2.0.1"
 
+wgpu = "*"
 dolly = "0.1.4"
 egui = "0.16.1"
 bevy = "0.6.0"

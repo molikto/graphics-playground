@@ -1,32 +1,49 @@
-use bevy::{core::Name, pbr::{PbrBundle, StandardMaterial}, prelude::{AssetServer, Assets, Commands, ResMut}, render::{mesh::{Indices, Mesh, shape}, render_resource::PrimitiveTopology}, math::Vec3};
+use bevy::{
+    core::Name,
+    math::Vec3,
+    pbr::{PbrBundle, StandardMaterial},
+    prelude::{AssetServer, Assets, Commands, ResMut, Transform, Color},
+    render::{
+        mesh::{shape, Indices, Mesh},
+        render_resource::PrimitiveTopology,
+    },
+};
 
-
+fn create_single_debug_cube(
+    commands: &mut Commands,
+    meshes: &mut Assets<Mesh>,
+    materials: &mut Assets<StandardMaterial>,
+    pos: Vec3,
+    color: Color,
+) {
+    commands
+        .spawn_bundle(PbrBundle {
+            mesh: meshes.add(Mesh::from(shape::Cube { size: 0.1 })),
+            material: materials.add(StandardMaterial {
+                base_color: color,
+                unlit: true,
+                ..Default::default()
+            }),
+            transform: Transform::from_translation(pos),
+            ..Default::default()
+        });
+}
 
 pub fn create_debug_cube(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
 ) {
-    let material = materials.add(StandardMaterial {
-        unlit: true,
-        ..Default::default()
-    });
-    commands
-        .spawn_bundle(PbrBundle {
-            mesh: meshes.add(Mesh::from(shape::Cube { size: 0.1 })),
-            material: material.clone(),
-            ..Default::default()
-        }).insert(Name::new("Debug Cube"));
+    create_single_debug_cube(&mut commands, &mut meshes, &mut materials, Vec3::ZERO, Color::WHITE);
+    create_single_debug_cube(&mut commands, &mut meshes, &mut materials, Vec3::X * 10.0, Color::RED);
+    create_single_debug_cube(&mut commands, &mut meshes, &mut materials, Vec3::Y * 10.0, Color::GREEN);
+    create_single_debug_cube(&mut commands, &mut meshes, &mut materials, Vec3::Z * 10.0, Color::BLUE);
 }
 
-
-pub fn enable_hot_reloading(
-    asset_server: ResMut<AssetServer>,
-) {
+pub fn enable_hot_reloading(asset_server: ResMut<AssetServer>) {
     // Watch for changes
     asset_server.watch_for_changes().unwrap();
 }
-
 
 #[derive(Debug, Copy, Clone)]
 pub struct RevertBox {
@@ -49,7 +66,7 @@ impl RevertBox {
             max_y: size.y,
             min_z: 0.0,
             max_z: size.z,
-        }
+        };
     }
     pub fn new(x_length: f32, y_length: f32, z_length: f32) -> RevertBox {
         RevertBox {
@@ -120,8 +137,8 @@ impl From<RevertBox> for Mesh {
             4, 6, 5, 6, 4, 7, // bottom
             8, 10, 9, 10, 8, 11, // right
             12, 14, 13, 14, 12, 15, // left
-            16, 18,17,  18, 16, 19, // front
-            20, 22,21,  22, 20,  23,// back
+            16, 18, 17, 18, 16, 19, // front
+            20, 22, 21, 22, 20, 23, // back
             // original
             0, 1, 2, 2, 3, 0, // top
             4, 5, 6, 6, 7, 4, // bottom

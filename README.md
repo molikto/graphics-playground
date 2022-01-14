@@ -24,7 +24,10 @@ run with `cargo run -p bosky --release`
     * [ ] `.vox` complete
     * [ ] more physics based materials?
 * renderer (in `bosky`)
-    * [ ] **progressive rendering (Bevy `RenderGraph`)**
+    * [X] progressive rendering (Bevy `RenderGraph`)
+        * [ ] blue error points???
+        * [ ] the projection is a bit wrong
+        * [ ] measure if compute shader is any faster...
     * [ ] realtime rendering with TAA or DLSS or???
     * [ ] realtime rendering hardware API
 
@@ -42,6 +45,7 @@ run with `cargo run -p bosky --release`
     * ESVO: https://research.nvidia.com/sites/default/files/pubs/2010-02_Efficient-Sparse-Voxel/laine2010i3d_paper.pdf
         * https://github.com/AdamYuan/SparseVoxelOctree
         * https://github.com/Ria8651/voxel-tracing-playground
+        * https://github.com/Neo-Zhixing/dust
     * GVDB: https://developer.nvidia.com/gvdb
     * NanoVDB: https://developer.nvidia.com/nanovdb
     * BrickMap: https://dspace.library.uu.nl/handle/1874/315917
@@ -54,13 +58,16 @@ run with `cargo run -p bosky --release`
     * https://www.reddit.com/r/VoxelGameDev/comments/cmsu9a/raytraced_voxel_engine/
 * ray tracing
     * Ray Tracing in One Weekend: https://raytracing.github.io/
+        * https://github.com/mitchmindtree/nannou-rustgpu-raytracer
     * PBRT: https://www.pbrt.org/
     * GPU Wavefront Path Tracing: https://research.nvidia.com/sites/default/files/pubs/2013-07_Megakernels-Considered-Harmful/laine2013hpg_paper.pdf
         * https://jacco.ompf2.com/2019/07/18/wavefront-path-tracing/
     * TAA: http://behindthepixels.io/assets/files/TemporalAA.pdf 
         * https://github.com/oskarbraten/voxel-path-tracer
     * *more random ones bellow*
+    * https://github.com/gkjohnson/three-gpu-pathtracing
     * https://github.com/chunky-dev/chunky/
     * https://github.com/erichlof/THREE.js-PathTracing-Renderer
     * https://github.com/EmbarkStudios/kajiya
-
+* webgpu & rust-gpu
+    * the compute shader are adapted from https://github.com/googlefonts/compute-shader-101

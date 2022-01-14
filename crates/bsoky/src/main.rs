@@ -1,54 +1,34 @@
-use std::{
-    time::Duration
-};
+use std::time::Duration;
 
 use bevy::{
     diagnostic::{FrameTimeDiagnosticsPlugin, LogDiagnosticsPlugin},
-    math::{Vec2},
-    pbr::{MaterialMeshBundle, MaterialPlugin},
-    prelude::{App, Assets, Commands, ResMut, Msaa},
+    math::Vec2,
+    prelude::{App, Msaa},
     render::{
-        mesh::{Mesh}, options::{WgpuOptions, Backends}, render_resource::{WgpuLimits, WgpuFeatures},
+        options::{Backends, WgpuOptions},
+        render_resource::{WgpuFeatures, WgpuLimits},
     },
     window::WindowDescriptor,
     DefaultPlugins,
 };
 
-pub mod env_render;
 pub mod create_svt;
-use bevy_common::{RevertBox, create_debug_cube, MovementSettings};
+pub mod voxel_render_fragment;
+pub mod voxel_render_compute;
+use bevy_common::{create_debug_cube, MovementSettings};
 use bsoky_no_std::MySvtMut;
 use common::math::*;
 
-use env_render::CustomMaterial;
-
-
-fn create_simple_debug_objects(
-    mut commands: Commands,
-    mut meshes: ResMut<Assets<Mesh>>,
-    mut materials: ResMut<Assets<CustomMaterial>>,
-) {
-    let svt = create_svt::debug_create_rsvo();
-    println!("total dim {}\nblock count {}\nmemory used {}\nmemory ratio {}", MySvtMut::TOTAL_DIM, svt.block_count(), svt.memory_used(), svt.memory_ratio());
-    let total_size = MySvtMut::TOTAL_DIM as f32;
-    let mesh = meshes.add(RevertBox::zero_with_size(Vec3::splat(total_size)).into());
-    let material = materials.add(CustomMaterial { svt });
-    commands.spawn_bundle(MaterialMeshBundle::<CustomMaterial> {
-        mesh,
-        material,
-        ..Default::default()
-    });
-}
-
 fn main() {
-    //simulation_benchmark();
     let half_size = (MySvtMut::TOTAL_DIM / 2) as f32;
     App::new()
-        .insert_resource(Msaa {  samples: 1 })
+        .add_plugins(DefaultPlugins)
+        .insert_resource(Msaa { samples: 1 })
         .insert_resource(WgpuOptions {
             features: WgpuFeatures::PUSH_CONSTANTS,
             backends: Some(Backends::VULKAN),
             limits: WgpuLimits {
+                max_push_constant_size: 256,
                 max_storage_buffer_binding_size: 4000000000,
                 ..Default::default()
             },
@@ -63,24 +43,26 @@ fn main() {
             position: Some(Vec2::new(0.0, 24.0)),
             ..Default::default()
         })
-        .add_plugins(DefaultPlugins)
-        .insert_resource(MovementSettings { 
-            speed: 120.,
-            ..Default::default()
-        })
-        .insert_resource(bevy_common::camera::CameraSetupParameter {
-            position: Vec3::new(1.0, 1.0, 0.0) * half_size,
-            look_at: Vec3::splat(1.0) * half_size,
-        })
         .add_plugin(bevy_common::camera::PlayerPlugin)
+
         .add_plugin(LogDiagnosticsPlugin {
             wait_duration: Duration::from_secs(5),
             filter: Some(vec![FrameTimeDiagnosticsPlugin::FRAME_TIME]),
             ..Default::default()
         })
+
+        .insert_resource(MovementSettings {
+            speed: 120.,
+            ..Default::default()
+        })
+        .insert_resource(bevy_common::camera::CameraSetupParameter {
+            position: Vec3::new(1.0, 0.0, 0.0) * half_size * 2.0,
+            look_at: Vec3::splat(0.0),
+        })
         .add_plugin(FrameTimeDiagnosticsPlugin::default())
-        .add_plugin(MaterialPlugin::<CustomMaterial>::default())
+
+        .add_plugin(voxel_render_compute::EnvRenderPlugin)
+
         .add_startup_system(create_debug_cube)
-        .add_startup_system(create_simple_debug_objects)
         .run();
 }

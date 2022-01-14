@@ -157,7 +157,7 @@ impl<REF: Deref<Target = [usvt]>, const BLOCK_DIM: usvt, const LEVEL_COUNT: usiz
     }
 
     #[inline]
-    pub fn traverse_ray<C>(&self, max_count: u32, mut ray: Ray3, mut closure: C) -> i32
+    pub fn traverse_ray<C>(&self, max_count: u32, ray: Ray3, mut closure: C) -> i32
     where
         C: FnMut(
             BlockRayIntersectionInfo,
@@ -166,14 +166,7 @@ impl<REF: Deref<Target = [usvt]>, const BLOCK_DIM: usvt, const LEVEL_COUNT: usiz
         ) -> bool,
     {
         let mut count: u32 = 0;
-        // TODO there are still cases where it infinite loop..
-        // the max dim we can have is 8^8, otherwise it will not work because of floating point issue
-        // https://itectec.com/matlab-ref/matlab-function-flintmax-largest-consecutive-integer-in-floating-point-format/
-        //de_eps(&mut ray.dir);
-        ray.dir = ray.dir.normalize_or_zero();
-        if ray.dir == Vec3::ZERO {
-            return -3;
-        }
+        // normaling ray here has some bad thing happens... if want to normalize, need the outside usage sync with it
         let ray_dir_inv = 1.0 / ray.dir;
         let ray_pos_div_ray_dir = ray.pos / ray.dir;
         let ray_dir_signum = ray.dir.signum();
@@ -187,8 +180,12 @@ impl<REF: Deref<Target = [usvt]>, const BLOCK_DIM: usvt, const LEVEL_COUNT: usiz
             position = ray.pos;
         } else {
             let hit = aabb.hit(&ray, 0.0, 100000000000.0);
-            mask = hit.nor;
-            position = ray.at(hit.t + 0.0001);
+            if hit.is_hit {
+                mask = hit.nor;
+                position = ray.at(hit.t + 0.0001);
+            } else {
+                return 0;
+            }
         }
 
         // rollback buffers

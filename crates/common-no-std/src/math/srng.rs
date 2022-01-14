@@ -20,6 +20,10 @@ impl SRng {
         self.gen_signed() * 0.5 + 0.5
     }
 
+    pub fn gen_vec2(&mut self) -> Vec2 {
+        vec2(self.gen(), self.gen())
+    }
+
     pub fn gen_in_unit_sphere(&mut self) -> Vec3 {
         let mut p;
         loop {

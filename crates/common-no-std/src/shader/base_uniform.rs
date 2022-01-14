@@ -17,10 +17,3 @@ pub struct ViewUniform {
 pub struct MeshUniform {
   pub transform: Mat4,
 }
-
-
-#[derive(Copy, Clone, Default)]
-pub struct MapRenderData {
-    pub size: UVec3,
-    pub aabb: Aabb3,
-}

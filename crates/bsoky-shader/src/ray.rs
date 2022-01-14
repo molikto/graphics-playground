@@ -15,7 +15,7 @@ pub enum RenderMode {
 
 pub const RENDER_MODE: RenderMode = RenderMode::RayTracing;
 
-const MAX_RAY_DEPTH: u32 = 4;
+const MAX_RAY_DEPTH: u32 = 5;
 
 pub const MAX_ITERATION: u32 = 256;
 pub const MAX_HEAT_ITERATION: u32 = 128;
@@ -35,7 +35,7 @@ pub fn shade_ray(rng: &mut SRng, svt: MySvt, mut current_ray: Ray3) -> Vec3 {
         albedo: RgbLinear(vec3(0.9, 0.3, 0.4)),
         fuzz: 0.1,
     };
-    let material3 = Dielectric { ref_idx: 1.5 };
+    let material3 = Dielectric { ref_idx: 1.1 };
     let mut accumulate_attenuation = Vec3::ONE;
     for _ in 0..MAX_RAY_DEPTH {
         let mut final_in_info: BlockRayIntersectionInfo = BlockRayIntersectionInfo {
