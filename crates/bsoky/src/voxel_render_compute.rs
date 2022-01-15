@@ -208,7 +208,7 @@ impl FromWorld for EnvRenderPipeline {
         let texture_view0 = texture0.create_view(&tex_view_desc);
         let texture_view1 = texture1.create_view(&tex_view_desc);
 
-        let svt = super::create_svt::debug_create_rsvo();
+        let svt = super::create_svt::debug_create_sdf();
         let svt_contents: &[u8] = unsafe { svt.mem.as_slice().align_to::<u8>().1 };
         let svt_buffer = render_device.create_buffer_init(&BufferInitDescriptor {
             contents: svt_contents,

@@ -15,7 +15,7 @@ pub enum RenderMode {
 
 pub const RENDER_MODE: RenderMode = RenderMode::RayTracing;
 
-const MAX_RAY_DEPTH: u32 = 5;
+const MAX_RAY_DEPTH: u32 = 15;
 
 pub const MAX_ITERATION: u32 = 256;
 pub const MAX_HEAT_ITERATION: u32 = 128;
@@ -35,7 +35,7 @@ pub fn shade_ray(rng: &mut SRng, svt: MySvt, mut current_ray: Ray3) -> Vec3 {
         albedo: RgbLinear(vec3(0.9, 0.3, 0.4)),
         fuzz: 0.1,
     };
-    let material3 = Dielectric { ref_idx: 1.1 };
+    let material3 = Dielectric { ref_idx: 1.5 };
     let mut accumulate_attenuation = Vec3::ONE;
     for _ in 0..MAX_RAY_DEPTH {
         let mut final_in_info: BlockRayIntersectionInfo = BlockRayIntersectionInfo {
@@ -85,7 +85,7 @@ pub fn shade_ray(rng: &mut SRng, svt: MySvt, mut current_ray: Ray3) -> Vec3 {
                         MaterialInteraction { attenuation, ray } => {
                             accumulate_attenuation = accumulate_attenuation * attenuation.0;
                             current_ray = ray;
-                            current_ray.advance(0.001); // TOOD is this correct? "Fixing Shadow Acne" in "Ray Tracing in One Weekend"?
+                            current_ray.advance(0.0001); // TOOD is this correct? "Fixing Shadow Acne" in "Ray Tracing in One Weekend"?
                         }
                     };
                 }

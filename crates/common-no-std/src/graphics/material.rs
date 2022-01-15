@@ -76,12 +76,12 @@ pub struct Dielectric {
     pub ref_idx: f32,
 }
 
-fn refract(uv: Vec3, n: Vec3, eta_over_etat: f32) -> Vec3 {
+fn refract(uv: Vec3, n: Vec3, etai_over_etat: f32) -> Vec3 {
     // not understanding, just copying
-    let cos_theta = (-uv).dot(n);
-    let r_out_parallel: Vec3 = eta_over_etat * (uv + cos_theta * n);
-    let r_out_perp: Vec3 = -(1.0 - r_out_parallel.length_squared()).sqrt() * n;
-    r_out_parallel + r_out_perp
+    let cos_theta = (-uv).dot(n).min(1.0);
+    let r_out_perp: Vec3 = etai_over_etat * (uv + cos_theta * n);
+    let r_out_parallel: Vec3 = -(1.0 - r_out_perp.length_squared()).abs().sqrt() * n;
+     r_out_parallel + r_out_perp
 }
 
 fn schlick(cosine: f32, ref_idx: f32) -> f32 {
@@ -109,7 +109,7 @@ impl AbstractMaterial for Dielectric {
             refract(v, hit.nor, refrection_ratio)
         }.try_normalize_or(-hit.nor);
         MaterialInteraction {
-            attenuation: RgbLinear(Vec3::new(1.0, 1.0, 1.0)),
+            attenuation: RgbLinear(Vec3::ONE),
             ray: Ray3 {
                 pos: ray.at(hit.t),
                 dir,

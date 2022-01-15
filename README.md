@@ -27,6 +27,7 @@ run with `cargo run -p bosky --release`
     * [X] progressive rendering (Bevy `RenderGraph`)
         * [ ] the projection is a bit wrong
         * [ ] measure if compute shader is any faster...
+        * [ ] resize window
     * [ ] realtime rendering with TAA or DLSS or???
     * [ ] realtime rendering hardware API
 
