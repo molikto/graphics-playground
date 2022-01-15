@@ -433,9 +433,9 @@ mod tests {
             for j in 0..image_size {
                 let ray = Ray3 {
                     pos: Vec3::new(-100.0, -100.0, 0.0),
-                    dir: Vec3::new(i as f32, image_size as f32, image_size as f32)
+                    dir: (Vec3::new(i as f32, image_size as f32, image_size as f32)
                         / (image_size as f32)
-                        * (TOTAL as f32),
+                        * (TOTAL as f32)).normalize(),
                 };
                 // let ray = Ray3 {
                 //     pos: Vec3::new(i as f32 + 0.4, j as f32 + 0.4, 0.1) / (image_size as f32) * (TOTAL as f32),
@@ -473,7 +473,7 @@ mod tests {
                 300,
                 Ray3 {
                     pos: vec3(rng.gen(), rng.gen(), rng.gen()) * size,
-                    dir: vec3(rng.gen(), rng.gen(), rng.gen()) * size * 2.0 - Vec3::splat(size),
+                    dir: (vec3(rng.gen(), rng.gen(), rng.gen()) * size * 2.0 - Vec3::splat(size)).try_normalize_or(Vec3::X),
                 },
                 |t_hit, block, mask| {
                     return false;
@@ -554,7 +554,7 @@ mod tests {
                 let mut hit = false;
                 let ray = Ray3 {
                     pos: Vec3::new(i as f32, j as f32, 200.0) / 100.0 * 256.0,
-                    dir: Vec3::new(0.1, 0.1, -1.0),
+                    dir: Vec3::new(0.1, 0.1, -1.0).normalize(),
                 };
                 svt.traverse_ray(100, ray, |_, _, block| {
                     hit = block.data == 1;

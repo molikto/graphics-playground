@@ -20,7 +20,7 @@ use bsoky_no_std::MySvtMut;
 use common::math::*;
 
 fn main() {
-    let half_size = (MySvtMut::TOTAL_DIM / 2) as f32;
+    let total_size = MySvtMut::TOTAL_DIM as f32;
     App::new()
         .add_plugins(DefaultPlugins)
         .insert_resource(Msaa { samples: 1 })
@@ -56,8 +56,8 @@ fn main() {
             ..Default::default()
         })
         .insert_resource(bevy_common::camera::CameraSetupParameter {
-            position: Vec3::new(1.0, 0.0, 0.0) * half_size * 2.0,
-            look_at: Vec3::splat(0.0),
+            position: Vec3::splat(total_size),
+            look_at: Vec3::splat(total_size / 2.0),
         })
         .add_plugin(FrameTimeDiagnosticsPlugin::default())
 

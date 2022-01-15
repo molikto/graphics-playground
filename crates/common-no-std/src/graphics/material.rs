@@ -31,7 +31,7 @@ const LAMBERTIAN_SCATTER: u32 = 1;
 
 impl AbstractMaterial for Lambertian {
     fn scatter(self, rng: &mut SRng, ray: Ray3, hit: HitRecord3) -> MaterialInteraction {
-        let mut ray_dir = if LAMBERTIAN_SCATTER == 0 {
+        let mut dir = if LAMBERTIAN_SCATTER == 0 {
             hit.nor + rng.gen_in_unit_sphere().normalize()
         } else if LAMBERTIAN_SCATTER == 1 {
             rng.gen_in_hemisphere(hit.nor)
@@ -39,15 +39,12 @@ impl AbstractMaterial for Lambertian {
             panic!();
         };
         // avoid the case normal and ray_dir cancel out
-        ray_dir = ray_dir.normalize_or_zero();
-        if ray_dir == Vec3::ZERO {
-            ray_dir = hit.nor;
-        }
+        dir = dir.try_normalize_or(hit.nor);
         MaterialInteraction {
             attenuation: self.albedo,
             ray: Ray3 {
                 pos: ray.at(hit.t),
-                dir: ray_dir,
+                dir,
             },
         }
     }
@@ -62,13 +59,13 @@ pub struct Metal {
 impl AbstractMaterial for Metal {
     fn scatter(self, rng: &mut SRng, ray: Ray3, hit: HitRecord3) -> MaterialInteraction {
         let n = hit.nor;
-        let v: Vec3 = ray.dir.normalize();
-        let reflected = v.reflect(n);
+        let reflected = ray.dir.reflect(n);
+        let dir = (reflected + rng.gen_in_unit_sphere() * self.fuzz).try_normalize_or(hit.nor);
         MaterialInteraction {
             attenuation: self.albedo,
             ray: Ray3 {
                 pos: ray.at(hit.t),
-                dir: reflected + rng.gen_in_unit_sphere() * self.fuzz,
+                dir,
             },
         }
     }
@@ -101,7 +98,7 @@ impl AbstractMaterial for Dielectric {
         } else {
             refraction_index
         };
-        let v: Vec3 = ray.dir.normalize();
+        let v: Vec3 = ray.dir;
         // something I don't bother to understand
         let cos_theta = (-v).dot(hit.nor).min(1.0);
         let sin_theta = (1.0 - cos_theta * cos_theta).sqrt();
@@ -110,7 +107,7 @@ impl AbstractMaterial for Dielectric {
             v.reflect(hit.nor)
         } else {
             refract(v, hit.nor, refrection_ratio)
-        };
+        }.try_normalize_or(-hit.nor);
         MaterialInteraction {
             attenuation: RgbLinear(Vec3::new(1.0, 1.0, 1.0)),
             ray: Ray3 {

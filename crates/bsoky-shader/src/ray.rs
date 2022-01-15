@@ -22,7 +22,7 @@ pub const MAX_HEAT_ITERATION: u32 = 128;
 
 // from Ray Tracing in One Weekend
 pub fn skybox0(ray: &Ray3) -> Vec3 {
-    let unit = ray.dir.normalize();
+    let unit = ray.dir;
     let t = 0.5 * (unit.y + 1.0) as f32;
     (1.0 - t) * Vec3::new(1.0, 1.0, 1.0) + t * Vec3::new(0.5, 0.7, 1.0)
 }

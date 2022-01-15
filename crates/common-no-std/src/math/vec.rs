@@ -12,6 +12,7 @@ pub trait MyVecExt {
     fn get(self, a: usize) -> f32;
     fn step(self, other: Self) -> Self;
     fn step_f(self, other: f32) -> Self;
+    fn try_normalize_or(self, other: Self) -> Self;
     fn sum(self) -> f32;
     fn new_axis(u: usize) -> Self;
 }
@@ -74,6 +75,15 @@ impl MyVecExt for Vec3 {
             panic!()
         }
     }
+
+    fn try_normalize_or(self, other: Self) -> Self {
+        let rcp = self.length_recip();
+        if rcp.is_finite() && rcp > 0.0 {
+            self * rcp
+        } else {
+            other
+        }
+    }
 }
 
 impl MyVecExt for Vec2 {
@@ -103,6 +113,15 @@ impl MyVecExt for Vec2 {
             Vec2::new(0.0, 1.0)
         } else {
             panic!()
+        }
+    }
+
+    fn try_normalize_or(self, other: Self) -> Self {
+        let rcp = self.length_recip();
+        if rcp.is_finite() && rcp > 0.0 {
+            self * rcp
+        } else {
+            other
         }
     }
     

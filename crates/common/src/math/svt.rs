@@ -24,7 +24,7 @@ fn set_from_rsvo<const BLOCK_SIZE: usvt, const LEVEL_COUNT: usize>(
     level: usize,
     position: Usvt3,
 )  {
-    let material = rand::thread_rng().gen_range(1..2);
+    let material = rand::thread_rng().gen_range(1..4);
     if BLOCK_SIZE == 2 {
         mem.set_with_level_cap(level as usvt, position, material);
     } else if BLOCK_SIZE == 4 {

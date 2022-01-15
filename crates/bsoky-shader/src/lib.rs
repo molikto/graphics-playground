@@ -117,7 +117,7 @@ pub fn compute(
         //frag_coord.y = - frag_coord.y;
         let pos = (uniform.camera_transform * Vec3::ZERO.extend(1.0)).truncate();
         let mut dir = (uniform.inverse_view * frag_coord.extend(0.0).extend(1.0)).truncate();
-        dir = (uniform.camera_transform * dir.extend(0.0)).truncate();
+        dir = (uniform.camera_transform * dir.extend(0.0)).truncate().normalize();
         let ray = Ray3 { pos, dir };
 
         let env_color = ray::shade_ray(&mut rng, svt, ray);

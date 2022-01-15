@@ -25,7 +25,6 @@ run with `cargo run -p bosky --release`
     * [ ] more physics based materials?
 * renderer (in `bosky`)
     * [X] progressive rendering (Bevy `RenderGraph`)
-        * [ ] blue error points???
         * [ ] the projection is a bit wrong
         * [ ] measure if compute shader is any faster...
     * [ ] realtime rendering with TAA or DLSS or???
