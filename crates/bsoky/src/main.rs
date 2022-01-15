@@ -56,7 +56,7 @@ fn main() {
             ..Default::default()
         })
         .insert_resource(bevy_common::camera::CameraSetupParameter {
-            position: Vec3::splat(total_size),
+            position: Vec3::new(total_size / 2.0, total_size / 2.0, 0.0),
             look_at: Vec3::splat(total_size / 2.0),
         })
         .add_plugin(FrameTimeDiagnosticsPlugin::default())

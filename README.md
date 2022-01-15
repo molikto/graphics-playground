@@ -14,19 +14,20 @@ run with `cargo run -p bosky --release`
         * performance
             * [X] compare with ESVO performance -- see [here](crates/common-no-std/SVT_PERF.md) (~5 times slower)
             * [ ] optimize it to be faster
+                * [ ] **write a wgsl version of the structure see if it's me...**
+                * [ ] why the compute shader version is even slower?
             * [ ] beam optimization
             * [ ] redirect rays
         * API
             * [ ] load `.vox` file
 * material (in `common-no-std`)
     * [X] basic material in "One Weekend"
+    * [ ] glass material seems wrong??
     * [ ] volume fog material in "Next Week"
     * [ ] `.vox` complete
     * [ ] more physics based materials?
 * renderer (in `bosky`)
     * [X] progressive rendering (Bevy `RenderGraph`)
-        * [ ] the projection is a bit wrong
-        * [ ] measure if compute shader is any faster...
         * [ ] resize window
     * [ ] realtime rendering with TAA or DLSS or???
     * [ ] realtime rendering hardware API

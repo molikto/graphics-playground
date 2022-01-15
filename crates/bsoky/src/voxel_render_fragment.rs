@@ -117,7 +117,7 @@ fn create_simple_debug_objects(
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<CustomMaterial>>,
 ) {
-    let svt = super::create_svt::debug_create_sdf();
+    let svt = super::create_svt::debug_create_rsvo();
     println!("total dim {}\nblock count {}\nmemory used {}\nmemory ratio {}", MySvtMut::TOTAL_DIM, svt.block_count(), svt.memory_used(), svt.memory_ratio());
     let mesh = meshes.add(RevertBox::zero_with_size(Vec3::splat(MySvtMut::TOTAL_DIM as f32)).into());
     let material = materials.add(CustomMaterial { svt });

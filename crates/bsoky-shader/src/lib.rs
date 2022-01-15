@@ -83,7 +83,7 @@ pub fn fragment(
 
     let mut ray = Ray3 {
         pos: to_simulation_coor(view.world_position),
-        dir: to_simulation_coor(frag_world_position - view.world_position),
+        dir: to_simulation_coor(frag_world_position - view.world_position).normalize_or_zero(),
     };
     let env_color = ray::shade_ray(&mut rng, svt, ray);
 
@@ -93,6 +93,7 @@ pub fn fragment(
     // no need for gamma correction
     //return Vec4(pow(env_color, Vec3(1.0/2.2)), 1.0);
 }
+
 
 #[spirv(compute(threads(8, 8)))]
 pub fn compute(
@@ -104,22 +105,18 @@ pub fn compute(
 ) {
     let size = uniform.size;
     if global_ix.x < size.x && global_ix.y < size.y {
-        let mut frag_coord = global_ix.truncate().as_vec2();
-        frag_coord.y = -frag_coord.y;
+        let mut frag_coord = uvec2(global_ix.x, size.y - global_ix.y).as_vec2();
         let seed = frag_coord.xy() + uniform.time;
         let mut rng = SRng { seed };
         frag_coord = frag_coord + rng.gen_vec2();
-        frag_coord = frag_coord / vec2(size.x as f32, size.y as f32) - vec2(0.5, 0.5);
+        frag_coord = frag_coord / vec2(size.x as f32, size.y as f32) * 2.0 - 1.0;
 
-
-        let svt = MySvt { mem: svt };
-
-        //frag_coord.y = - frag_coord.y;
         let pos = (uniform.camera_transform * Vec3::ZERO.extend(1.0)).truncate();
-        let mut dir = (uniform.inverse_view * frag_coord.extend(0.0).extend(1.0)).truncate();
+        let mut dir = (uniform.inverse_view * frag_coord.extend(-1.0).extend(1.0)).truncate();
         dir = (uniform.camera_transform * dir.extend(0.0)).truncate().normalize();
         let ray = Ray3 { pos, dir };
 
+        let svt = MySvt { mem: svt };
         let env_color = ray::shade_ray(&mut rng, svt, ray);
 
         // debug code
@@ -132,7 +129,7 @@ pub fn compute(
         //     uniform.time.sin(),
         //     1.0,
         // );
-        let tex_coor = uvec2(global_ix.x, global_ix.y).as_ivec2();
+        let tex_coor = global_ix.truncate().as_ivec2();
         let prev_color: Vec4 = src_tex.read(tex_coor);
         let frame_index = uniform.frame_index as f32;
         let frag_color = (frame_index * prev_color.truncate() + env_color) / (frame_index + 1.0);
