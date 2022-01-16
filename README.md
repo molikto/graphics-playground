@@ -65,6 +65,8 @@ run with `cargo run -p bosky --release`
     * *more random ones bellow*
     * https://jacco.ompf2.com/2021/02/01/a-voxel-renderer-for-learning-c-c/
     * https://www.reddit.com/r/VoxelGameDev/comments/cmsu9a/raytraced_voxel_engine/
+    * https://github.com/DavidWilliams81/cubiquity
+    * https://github.com/mgerhardy/engine
 * ray tracing
     * Ray Tracing in One Weekend: https://raytracing.github.io/
         * https://github.com/mitchmindtree/nannou-rustgpu-raytracer
