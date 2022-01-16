@@ -13,7 +13,7 @@ pub enum RenderMode {
     Iteration,
 }
 
-pub const RENDER_MODE: RenderMode = RenderMode::RayTracing;
+pub const RENDER_MODE: RenderMode = RenderMode::Iteration;
 
 const MAX_RAY_DEPTH: u32 = 15;
 
@@ -57,7 +57,7 @@ pub fn shade_ray(rng: &mut SRng, svt: MySvt, mut current_ray: Ray3) -> Vec3 {
         } else {
             if RENDER_MODE == RenderMode::Iteration {
                 let count = error_code as f32;
-                return Vec3::splat(((count) / (MAX_HEAT_ITERATION as f32)).powf(2.2));
+                return Vec3::splat((count) / (MAX_HEAT_ITERATION as f32));
                 //return heat::heat((count) / (MAX_ITERATION as f32));
             } else if RENDER_MODE == RenderMode::DotNShading {
                 let light_level = vec3(0.6, 0.75, 1.0);

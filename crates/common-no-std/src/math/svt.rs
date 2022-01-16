@@ -128,19 +128,19 @@ impl<REF: Deref<Target = [usvt]>, const BLOCK_DIM: usvt, const LEVEL_COUNT: usiz
 
         let mut mask: Vec3;
         let mut position: Vec3;
-        let aabb = Aabb3::new(Vec3::ZERO, Vec3::splat(Self::TOTAL_DIM as f32));
-        if aabb.inside(ray.pos) {
+        // let aabb = Aabb3::new(Vec3::ZERO, Vec3::splat(Self::TOTAL_DIM as f32));
+        // if aabb.inside(ray.pos) {
             mask = Vec3::ZERO;
             position = ray.pos;
-        } else {
-            let hit = aabb.hit(&ray, 0.0, 100000000000.0);
-            if hit.is_hit {
-                mask = hit.nor;
-                position = ray.at(hit.t + 0.0001);
-            } else {
-                return 0;
-            }
-        }
+        // } else {
+        //     let hit = aabb.hit(&ray, 0.0, 100000000000.0);
+        //     if hit.is_hit {
+        //         mask = hit.nor;
+        //         position = ray.at(hit.t + 0.0001);
+        //     } else {
+        //         return 0;
+        //     }
+        // }
 
         // rollback buffers
         let mut block_indexs = [0usize; LEVEL_COUNT];

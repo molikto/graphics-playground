@@ -14,7 +14,7 @@ use sdfu::{SDF};
 pub fn debug_create_rsvo() -> MySvtMut {
     // download yourself here https://github.com/ephtracy/voxel-model/blob/master/svo/
     let rsvo = std::fs::read( Path::new(env!("CARGO_MANIFEST_DIR")).join("sibenik_8k.rsvo")).unwrap();
-    load_svt_from_rsvo(&rsvo, 6)
+    load_svt_from_rsvo(&rsvo, 10)
 }
 
 pub fn debug_create_simple() -> MySvtMut {

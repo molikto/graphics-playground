@@ -16,6 +16,7 @@ pub mod create_svt;
 pub mod voxel_render_fragment;
 pub mod voxel_render_compute;
 use bevy_common::{create_debug_cube, MovementSettings};
+use bevy_inspector_egui::WorldInspectorPlugin;
 use bsoky_no_std::MySvtMut;
 use common::math::*;
 
@@ -35,8 +36,6 @@ fn main() {
             ..Default::default()
         })
         .insert_resource(WindowDescriptor {
-            // width: 1920.0,
-            // height: 1080.0,
             width: 1080.0,
             height: 720.0,
             title: "codename: bsoky".into(),
@@ -56,13 +55,13 @@ fn main() {
             ..Default::default()
         })
         .insert_resource(bevy_common::camera::CameraSetupParameter {
-            position: Vec3::new(total_size / 2.0, total_size / 2.0, 0.0),
-            look_at: Vec3::splat(total_size / 2.0),
+            position: Vec3::new(215.0, 394.0, 27.0),
+            look_at: Vec3::new(215.0, 374.0, 100.0),
         })
         .add_plugin(FrameTimeDiagnosticsPlugin::default())
 
-        .add_plugin(voxel_render_compute::EnvRenderPlugin)
-
+        .add_plugin(voxel_render_fragment::EnvRenderPlugin)
+        .add_plugin(WorldInspectorPlugin::new())
         .add_startup_system(create_debug_cube)
         .run();
 }
