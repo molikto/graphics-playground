@@ -158,9 +158,11 @@ pub trait MyVec3Ext {
     fn omit_axis(self, a: usize) -> Vec2;
     fn reflect(self, normal: Self) -> Self;
     fn sin(self) -> Vec3;
+    fn sign_bit(self) -> Vec3;
 }
 
 impl MyVec3Ext for Vec3 {
+
 
     #[inline]
     fn omit_axis(self, a: usize) -> Vec2 {
@@ -181,6 +183,14 @@ impl MyVec3Ext for Vec3 {
 
     fn sin(self) -> Vec3 {
         Self::new(self.x.sin(), self.y.sin(), self.z.sin())
+    }
+
+    fn sign_bit(self) -> Vec3 {
+        vec3(
+            if self.x >= 0.0 { 1.0 } else { 0.0 },
+            if self.y >= 0.0 { 1.0 } else { 0.0 },
+            if self.z >= 0.0 { 1.0 } else { 0.0 },
+        )
     }
 }
 

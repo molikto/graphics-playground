@@ -123,8 +123,6 @@ impl<REF: Deref<Target = [usvt]>, const BLOCK_DIM: usvt, const LEVEL_COUNT: usiz
         // normaling ray here has some bad thing happens... if want to normalize, need the outside usage sync with it
         let ray_dir_inv = 1.0 / ray.dir;
         let ray_pos_div_ray_dir = ray.pos / ray.dir;
-        let ray_dir_signum = ray.dir.signum();
-        let ray_dir_limit_mul = (ray_dir_signum + 1.0) / 2.0;
 
         let mut mask: Vec3;
         let mut position: Vec3;
@@ -151,13 +149,13 @@ impl<REF: Deref<Target = [usvt]>, const BLOCK_DIM: usvt, const LEVEL_COUNT: usiz
 
         let mut level_dim_div = Self::TOTAL_DIM / BLOCK_DIM;
         // pos in ESVO
-        let mut block_limit_v = ray_dir_limit_mul * (Self::TOTAL_DIM as f32);
+        let mut block_limit_v = ray.dir.sign_bit() * (Self::TOTAL_DIM as f32);
         let mut parent_block_limit =
             (block_limit_v * ray_dir_inv - ray_pos_div_ray_dir).min_element();
         let mut level: usvt = 0;
         // idx in ESVO
         // copied code same at loop end
-        block_limit_v = ((position / (level_dim_div as f32)).floor() + ray_dir_limit_mul) * (level_dim_div as f32);
+        block_limit_v = ((position / (level_dim_div as f32)).floor() + ray.dir.sign_bit() ) * (level_dim_div as f32);
         let mut level_position = vec3_to_usvt3(position) / level_dim_div % BLOCK_DIM;
         loop {
             let target_block = self.mem[parent_index + Self::encode(level_position)];
@@ -169,7 +167,7 @@ impl<REF: Deref<Target = [usvt]>, const BLOCK_DIM: usvt, const LEVEL_COUNT: usiz
                 // set mask later, because we want to know the mask of the enter face
                 // t = if ts_min < t { t + 0.0001 } else { ts_min };
                 t = ts_min;
-                mask = ts.step_f(t) * ray_dir_signum;
+                mask = ts.step_f(t) * ray.dir.signum();
                 if mask == Vec3::ZERO {
                     return -2;
                 }
@@ -184,17 +182,18 @@ impl<REF: Deref<Target = [usvt]>, const BLOCK_DIM: usvt, const LEVEL_COUNT: usiz
                 // we add extra value so we don't step on the boundary. `position = ray.at(t + 0.01)` doesn't work
                 let position_new = ray.at(t) + mask * 0.5;
                 // comparing `t = if ts_min < t { t + 0.0001 } else { ts_min };` doesn't work!! needs to do it like bellow
-                position.x = if ray_dir_signum.x > 0.0 {
+                let ray_dir_sign_bit = ray.dir.sign_bit();
+                position.x = if ray_dir_sign_bit.x > 0.0 {
                     position.x.max(position_new.x)
                 } else {
                     position.x.min(position_new.x)
                 };
-                position.y = if ray_dir_signum.y > 0.0 {
+                position.y = if ray_dir_sign_bit.y > 0.0 {
                     position.y.max(position_new.y)
                 } else {
                     position.y.min(position_new.y)
                 };
-                position.z = if ray_dir_signum.z > 0.0 {
+                position.z = if ray_dir_sign_bit.z > 0.0 {
                     position.z.max(position_new.z)
                 } else {
                     position.z.min(position_new.z)
@@ -233,7 +232,7 @@ impl<REF: Deref<Target = [usvt]>, const BLOCK_DIM: usvt, const LEVEL_COUNT: usiz
                 level_dim_div /= BLOCK_DIM; // must be here or we get 1 / N
                 parent_block_limit = ts_min;
             }
-            block_limit_v = ((position / (level_dim_div as f32)).floor() + ray_dir_limit_mul) * (level_dim_div as f32);
+            block_limit_v = ((position / (level_dim_div as f32)).floor() + ray.dir.sign_bit()) * (level_dim_div as f32);
             level_position = vec3_to_usvt3(position) / level_dim_div % BLOCK_DIM;
         }
     }
