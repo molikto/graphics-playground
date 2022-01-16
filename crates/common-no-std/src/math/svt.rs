@@ -157,8 +157,7 @@ impl<REF: Deref<Target = [usvt]>, const BLOCK_DIM: usvt, const LEVEL_COUNT: usiz
         let mut level: usvt = 0;
         // idx in ESVO
         // copied code same at loop end
-        let level_position_abs = vec3_to_usvt3(position) / level_dim_div;
-        block_limit_v = (level_position_abs.as_vec3() + ray_dir_limit_mul) * (level_dim_div as f32);
+        block_limit_v = ((position / (level_dim_div as f32)).floor() + ray_dir_limit_mul) * (level_dim_div as f32);
         let mut level_position = vec3_to_usvt3(position) / level_dim_div % BLOCK_DIM;
         loop {
             let target_block = self.mem[parent_index + Self::encode(level_position)];
@@ -234,10 +233,8 @@ impl<REF: Deref<Target = [usvt]>, const BLOCK_DIM: usvt, const LEVEL_COUNT: usiz
                 level_dim_div /= BLOCK_DIM; // must be here or we get 1 / N
                 parent_block_limit = ts_min;
             }
-            let level_position_abs = vec3_to_usvt3(position) / level_dim_div;
+            block_limit_v = ((position / (level_dim_div as f32)).floor() + ray_dir_limit_mul) * (level_dim_div as f32);
             level_position = vec3_to_usvt3(position) / level_dim_div % BLOCK_DIM;
-            block_limit_v =
-                (level_position_abs.as_vec3() + ray_dir_limit_mul) * (level_dim_div as f32);
         }
     }
 
