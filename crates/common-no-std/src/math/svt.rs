@@ -42,6 +42,10 @@ impl<REF: Deref<Target = [usvt]>, const BLOCK_DIM: usvt, const LEVEL_COUNT: usiz
     pub const BLOCK_SIZE: usvt = BLOCK_DIM * BLOCK_DIM * BLOCK_DIM;
     pub const TOTAL_DIM: usvt = BLOCK_DIM.pow(LEVEL_COUNT as usvt);
 
+    pub fn total_dim() -> usvt {
+        Self::TOTAL_DIM
+    }
+
     // TODO memory allocation
     pub fn root_block_index(&self) -> usize {
         return 1;
@@ -120,9 +124,17 @@ impl<REF: Deref<Target = [usvt]>, const BLOCK_DIM: usvt, const LEVEL_COUNT: usiz
         ) -> bool,
     {
         let mut count: u32 = 0;
-        // normaling ray here has some bad thing happens... if want to normalize, need the outside usage sync with it
+        // TODO there are still cases where it infinite loop..
+        // the max dim we can have is 8^8, otherwise it will not work because of floating point issue
+        // https://itectec.com/matlab-ref/matlab-function-flintmax-largest-consecutive-integer-in-floating-point-format/
+        // de_eps(&mut ray.dir);
+        if ray.dir == Vec3::ZERO {
+            return -3;
+        }
         let ray_dir_inv = 1.0 / ray.dir;
         let ray_pos_div_ray_dir = ray.pos / ray.dir;
+        let ray_dir_signum = ray.dir.signum();
+        let ray_dir_limit_mul = (ray_dir_signum + 1.0) / 2.0;
 
         let mut mask: Vec3;
         let mut position: Vec3;
@@ -139,101 +151,94 @@ impl<REF: Deref<Target = [usvt]>, const BLOCK_DIM: usvt, const LEVEL_COUNT: usiz
         //         return 0;
         //     }
         // }
-
-        // rollback buffers
-        let mut block_indexs = [0usize; LEVEL_COUNT];
-        let mut block_limits = [0.0; LEVEL_COUNT];
-
         let mut t = 0 as f32;
-        let mut parent_index: usize = self.root_block_index() * (Self::BLOCK_SIZE as usize);
+        let mut block_indexs = [0usize; LEVEL_COUNT];
+        block_indexs[0] = self.root_block_index() * (Self::BLOCK_SIZE as usize);
 
-        let mut level_dim_div = Self::TOTAL_DIM / BLOCK_DIM;
-        // pos in ESVO
-        let mut block_limit_v = ray.dir.sign_bit() * (Self::TOTAL_DIM as f32);
-        let mut parent_block_limit =
-            (block_limit_v * ray_dir_inv - ray_pos_div_ray_dir).min_element();
+        let block_limit = ray_dir_limit_mul * (Self::TOTAL_DIM as f32);
+        let ts = block_limit * ray_dir_inv - ray_pos_div_ray_dir;
+        let ts_min = ts.x.min(ts.y).min(ts.z);
+        let mut block_limits = [ts_min; LEVEL_COUNT];
+        // there is a off by one error...
+        //
+        // block aabbs is terminal block
         let mut level: usvt = 0;
-        // idx in ESVO
-        // copied code same at loop end
-        block_limit_v = ((position / (level_dim_div as f32)).floor() + ray.dir.sign_bit() ) * (level_dim_div as f32);
-        let mut level_position = vec3_to_usvt3(position) / level_dim_div % BLOCK_DIM;
+        let mut level_dim_div = Self::TOTAL_DIM / BLOCK_DIM;
+        // go inside levels
+        let mut level_position_abs: Usvt3;
+        let mut index: usvt;
         loop {
-            let target_block = self.mem[parent_index + Self::encode(level_position)];
-            let block_data = Self::block_index_data(target_block);
-            let ts = block_limit_v * ray_dir_inv - ray_pos_div_ray_dir;
-            let ts_min = ts.min_element();
-            if Self::is_terminal_block(target_block) {
-                let incident = BlockRayIntersectionInfo { t, mask };
-                // set mask later, because we want to know the mask of the enter face
-                // t = if ts_min < t { t + 0.0001 } else { ts_min };
-                t = ts_min;
-                mask = ts.step_f(t) * ray.dir.signum();
-                if mask == Vec3::ZERO {
-                    return -2;
-                }
-                let block_info = BlockInfo {
-                    level,
-                    data: block_data,
-                };
-                let ret = closure(incident, BlockRayIntersectionInfo { t, mask }, block_info);
-                if ret {
-                    return count as i32;
-                }
-                // we add extra value so we don't step on the boundary. `position = ray.at(t + 0.01)` doesn't work
-                let position_new = ray.at(t) + mask * 0.5;
-                // comparing `t = if ts_min < t { t + 0.0001 } else { ts_min };` doesn't work!! needs to do it like bellow
-                let ray_dir_sign_bit = ray.dir.sign_bit();
-                position.x = if ray_dir_sign_bit.x > 0.0 {
-                    position.x.max(position_new.x)
-                } else {
-                    position.x.min(position_new.x)
-                };
-                position.y = if ray_dir_sign_bit.y > 0.0 {
-                    position.y.max(position_new.y)
-                } else {
-                    position.y.min(position_new.y)
-                };
-                position.z = if ray_dir_sign_bit.z > 0.0 {
-                    position.z.max(position_new.z)
-                } else {
-                    position.z.min(position_new.z)
-                };
-                count += 1;
-                if count > max_count {
-                    return -1;
-                }
-                let over_limit = t >= parent_block_limit;
-                if over_limit {
-                    loop {
-                        if level == 0 {
-                            return count as i32;
-                        } else {
-                            count += 1; // keep same with ESVO paper for comparsion
-                            level -= 1;
-                            parent_block_limit = block_limits[level as usize];
-                            parent_index = block_indexs[level as usize];
-                            level_dim_div *= BLOCK_DIM;
-                        }
-                        if t < parent_block_limit {
-                            break;
-                        }
+            let position_u = vec3_to_usvt3(position);
+            loop {
+                level_position_abs = position_u / level_dim_div;
+                let level_position = level_position_abs % BLOCK_DIM;
+                let target_block_index =
+                    block_indexs[level as usize] + Self::encode(level_position);
+                let target_block = self.mem[target_block_index];
+                index = Self::block_index_data(target_block);
+                let block_limit =
+                    (level_position_abs.as_vec3() + ray_dir_limit_mul) * (level_dim_div as f32);
+                let ts = block_limit * ray_dir_inv - ray_pos_div_ray_dir;
+                let ts_min = ts.x.min(ts.y).min(ts.z);
+                if Self::is_terminal_block(target_block) {
+                    let incident = BlockRayIntersectionInfo { t, mask };
+                    // TODO this fixes some problem of inifinite looping
+                    // set mask later, because we want to know the mask of the enter face
+                    // t = if ts_min < t { t + 0.0001 } else { ts_min };
+                    t = ts_min;
+                    mask = ts.step_f(t) * ray_dir_signum;
+                    if mask == Vec3::ZERO {
+                        return -2;
                     }
+                    let block_info = BlockInfo {
+                        level,
+                        data: index,
+                    };
+                    let ret = closure(incident, BlockRayIntersectionInfo { t, mask }, block_info);
+                    if ret {
+                        return count as i32;
+                    }
+                    break;
                 } else {
-                    // incremental case
-                    level_position = (level_position.as_ivec3() + mask.as_ivec3()).as_uvec3();
-                    block_limit_v += mask * (level_dim_div as f32);
-                    continue;
+                    level += 1;
+                    level_dim_div /= BLOCK_DIM; // must be here or we get 1 / N
+                    block_limits[level as usize] = ts_min;
+                    block_indexs[level as usize] = index as usize * (Self::BLOCK_SIZE as usize);
                 }
-            } else {
-                block_indexs[level as usize] = parent_index;
-                block_limits[level as usize] = parent_block_limit;
-                level += 1;
-                parent_index = block_data as usize * (Self::BLOCK_SIZE as usize);
-                level_dim_div /= BLOCK_DIM; // must be here or we get 1 / N
-                parent_block_limit = ts_min;
             }
-            block_limit_v = ((position / (level_dim_div as f32)).floor() + ray.dir.sign_bit()) * (level_dim_div as f32);
-            level_position = vec3_to_usvt3(position) / level_dim_div % BLOCK_DIM;
+            // we add extra value so we don't step on the boundary. `position = ray.at(t + 0.01)` doesn't work
+            let position_new = ray.at(t) + mask * 0.5;
+            // comparing `t = if ts_min < t { t + 0.0001 } else { ts_min };` doesn't work!! needs to do it like bellow
+            position.x = if ray_dir_signum.x > 0.0 {
+                position.x.max(position_new.x)
+            } else {
+                position.x.min(position_new.x)
+            };
+            position.y = if ray_dir_signum.y > 0.0 {
+                position.y.max(position_new.y)
+            } else {
+                position.y.min(position_new.y)
+            };
+            position.z = if ray_dir_signum.z > 0.0 {
+                position.z.max(position_new.z)
+            } else {
+                position.z.min(position_new.z)
+            };
+            count += 1;
+            if count > max_count {
+                return -1;
+            }
+            loop {
+                let block_limit = block_limits[level as usize];
+                if t < block_limit {
+                    break;
+                } else if level == 0 {
+                    return count as i32;
+                } else {
+                    level -= 1;
+                    level_dim_div *= BLOCK_DIM;
+                }
+            }
         }
     }
 
@@ -429,7 +434,7 @@ mod tests {
     #[test]
     fn simple_debug() {
         let mut svt = MySvt::init(0);
-        let size = (MySvt::TOTAL_DIM - 10) as f32;
+        let size = (MySvt::total_dim() - 10) as f32;
         let mut rng = rand::thread_rng();
         for i in 0..1000 {
             let v = vec3(rng.gen(), rng.gen(), rng.gen()) * size;
