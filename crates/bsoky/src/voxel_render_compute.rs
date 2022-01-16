@@ -168,7 +168,7 @@ impl FromWorld for EnvRenderPipeline {
     fn from_world(world: &mut World) -> Self {
         let render_device = world.get_resource::<RenderDevice>().unwrap().wgpu_device();
 
-        let size = uvec2(1080, 720);
+        let size = uvec2(1080, 720) * 3;
         // let size = uvec2(
         //     primary_window.physical_width(),
         //     primary_window.physical_height(),
@@ -334,23 +334,34 @@ fn extract_phase(mut commands: Commands, obj: Res<EnvRenderObject>) {
 
 fn prepare_phase(mut pipeline: ResMut<EnvRenderPipeline>, view: Query<&ExtractedView>, queue: Res<RenderQueue>) {
     let extracted_view = view.iter().next().unwrap();
-    let cur_position = extracted_view.transform;
+    let cur_transform = extracted_view.transform;
     let cur_projection = extracted_view.projection;
     let mut frame_index= 0;
     if let Some((prev_position, prev_projection, frame_count)) = pipeline.prev_camera_uniform {
-        if prev_position != cur_position || prev_projection != cur_projection {
+        if prev_position != cur_transform || prev_projection != cur_projection {
             frame_index = 0;
         } else {
             frame_index = frame_count;
         }
     }
-    pipeline.prev_camera_uniform = Some((cur_position, cur_projection, frame_index + 1));
+    pipeline.prev_camera_uniform = Some((cur_transform, cur_projection, frame_index + 1));
 
+    let cur_matrix = cur_transform.compute_matrix();
+    let inverse_projection = cur_projection.inverse();
+    let mut top_left = inverse_projection * vec4(-1.0, 1.0, -1.0, 1.0);
+    let bottom_right = inverse_projection * vec4(1.0, -1.0, -1.0, 1.0);
+    let mut camera_h = (bottom_right - top_left) / (pipeline.size.x as f32);
+    camera_h.y = 0.0;
+    let mut camera_v = (bottom_right - top_left) / (pipeline.size.y as f32);
+    camera_v.x = 0.0;
+    top_left.w = 0.0;
     let uniform = EnvShaderUniform {
+        camera_pos: cur_transform.translation,
+        camera_look: (cur_matrix * top_left).truncate(),
+        camera_h: (cur_matrix * camera_h).truncate(),
+        camera_v: (cur_matrix * camera_v).truncate(),
         size: pipeline.size,
         time: pipeline.start_time.elapsed().as_micros() as f32 * 1e-6,
-        camera_transform: cur_position.compute_matrix(),
-        inverse_view: cur_projection.inverse(),
         frame_index,
     };
     queue.write_buffer(&pipeline.compute_uniform_buffer, 0, uniform.as_std140().as_bytes());

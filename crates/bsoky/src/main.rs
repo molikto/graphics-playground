@@ -42,14 +42,15 @@ fn main() {
             position: Some(Vec2::new(0.0, 24.0)),
             ..Default::default()
         })
-        .add_plugin(bevy_common::camera::PlayerPlugin)
 
+        .add_plugin(FrameTimeDiagnosticsPlugin::default())
         .add_plugin(LogDiagnosticsPlugin {
             wait_duration: Duration::from_secs(5),
             filter: Some(vec![FrameTimeDiagnosticsPlugin::FRAME_TIME]),
             ..Default::default()
         })
 
+        .add_plugin(bevy_common::camera::PlayerPlugin)
         .insert_resource(MovementSettings {
             speed: 120.,
             ..Default::default()
@@ -58,9 +59,8 @@ fn main() {
             position: Vec3::new(215.0, 394.0, 27.0),
             look_at: Vec3::new(215.0, 374.0, 100.0),
         })
-        .add_plugin(FrameTimeDiagnosticsPlugin::default())
 
-        .add_plugin(voxel_render_fragment::EnvRenderPlugin)
+        .add_plugin(voxel_render_compute::EnvRenderPlugin)
         .add_plugin(WorldInspectorPlugin::new())
         .add_startup_system(create_debug_cube)
         .run();

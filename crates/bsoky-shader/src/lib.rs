@@ -80,17 +80,13 @@ pub fn compute(
     #[spirv(global_invocation_id)] global_ix: UVec3,
 ) {
     let size = uniform.size;
-    let mut frag_coord = uvec2(global_ix.x, size.y - global_ix.y).as_vec2();
+    let mut frag_coord = vec2(global_ix.x as f32, global_ix.y as f32);
     let seed = frag_coord.xy() + uniform.time;
     let mut rng = SRng { seed };
     frag_coord = frag_coord + rng.gen_vec2();
-    frag_coord = frag_coord / vec2(size.x as f32, size.y as f32) * 2.0 - 1.0;
 
-    let pos = (uniform.camera_transform * Vec3::ZERO.extend(1.0)).truncate();
-    let mut dir = (uniform.inverse_view * frag_coord.extend(-1.0).extend(1.0)).truncate();
-    dir = (uniform.camera_transform * dir.extend(0.0))
-        .truncate()
-        .normalize();
+    let pos = uniform.camera_pos;
+    let dir = uniform.camera_look + frag_coord.x * uniform.camera_h + frag_coord.y * uniform.camera_v;
     let ray = Ray3 { pos, dir };
 
     let svt = MySvt { mem: svt };
