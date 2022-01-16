@@ -9,6 +9,9 @@ use super::vec::*;
 pub type usvt = u32;
 pub type Usvt3 = UVec3;
 
+const MASK_IS_LEAF: usvt = 1u32 << (usvt::BITS - 1);
+const MASK_DATA: usvt = !MASK_IS_LEAF;
+
 pub fn vec3_to_usvt3(v: Vec3) -> Usvt3 {
     Usvt3::new(v.x as usvt, v.y as usvt, v.z as usvt)
 }
@@ -58,20 +61,20 @@ impl<REF: Deref<Target = [usvt]>, const BLOCK_DIM: usvt, const LEVEL_COUNT: usiz
     // block API
     #[inline]
     pub fn is_terminal_block(u: usvt) -> bool {
-        u % (2 as usvt) == (0 as usvt)
+        u & MASK_IS_LEAF == (0 as usvt)
     }
 
     #[inline]
     pub fn block_index_data(u: usvt) -> usvt {
-        u >> 1u32
+        u & MASK_DATA
     }
 
     #[inline]
     pub fn new_block(terminal: bool, index: usvt) -> usvt {
         if terminal {
-            return index << (1 as usvt);
+            return index;
         } else {
-            return index << (1 as usvt) | (1 as usvt);
+            return index | MASK_IS_LEAF;
         }
     }
 
