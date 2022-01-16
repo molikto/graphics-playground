@@ -17,7 +17,7 @@ pub mod voxel_render_fragment;
 pub mod voxel_render_compute;
 use bevy_common::{create_debug_cube, MovementSettings};
 use bevy_inspector_egui::WorldInspectorPlugin;
-use bsoky_no_std::MySvtMut;
+use bsoky_shader::MySvtMut;
 use common::math::*;
 
 fn main() {

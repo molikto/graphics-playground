@@ -15,7 +15,7 @@ use bevy::{
     utils::Instant,
 };
 use bevy_crevice::{std140::{AsStd140, Std140}};
-use bsoky_no_std::EnvShaderUniform;
+use bsoky_shader::EnvShaderUniform;
 use common::math::*;
 use wgpu::{
     include_spirv_raw,

@@ -4,15 +4,22 @@
     feature(register_attr),
     register_attr(spirv)
 )]
+mod shared;
+pub use shared::*;
 
-use bsoky_no_std::*;
+pub mod ray;
+mod util;
+
+
+
+//
+// kernels
+//
+
 use common::{math::*, shader::base_uniform::*, svt::*};
 #[cfg(not(target_arch = "spirv"))]
 use spirv_std::macros::spirv;
-use spirv_std::num_traits::Float;
 use spirv_std::*;
-
-mod ray;
 
 #[spirv(vertex)]
 pub fn vertex(
@@ -20,7 +27,7 @@ pub fn vertex(
     #[spirv(uniform, descriptor_set = 0, binding = 0)] view: &ViewUniform,
     #[spirv(uniform, descriptor_set = 2, binding = 0)] mesh: &MeshUniform,
     position: Vec3,
-    normal: Vec3,
+    _normal: Vec3,
     uv: Vec2,
     #[spirv(position)] out_clip_position: &mut Vec4,
     #[spirv(flat)] out_face: &mut u32,
@@ -32,31 +39,6 @@ pub fn vertex(
     *out_uv = uv;
 }
 
-pub fn frag_world_position_from_face(map_size: Vec3, face: u32, uv: Vec2) -> Vec3 {
-    // TODO don't branch that much
-    let mut frag_world_position = vec3(0.0, 0.0, 0.0);
-    if face == 0 {
-        // max z side
-        frag_world_position = vec3(uv.x * map_size.x, uv.y * map_size.y, map_size.z);
-    } else if face == 1 {
-        // min z side
-        frag_world_position = vec3((1.0 - uv.x) * map_size.x, (1.0 - uv.y) * map_size.y, 0.0);
-    } else if face == 2 {
-        // max x side
-        frag_world_position = vec3(map_size.x, uv.x * map_size.y, uv.y * map_size.z);
-    } else if face == 3 {
-        // min x side
-        frag_world_position = vec3(0.0, (1.0 - uv.x) * map_size.y, (1.0 - uv.y) * map_size.z);
-    } else if face == 4 {
-        // max y side
-        frag_world_position = vec3(uv.x * map_size.x, map_size.y, uv.y * map_size.z);
-    } else if face == 5 {
-        // min y side
-        frag_world_position = vec3((1.0 - uv.x) * map_size.x, 0.0, (1.0 - uv.y) * map_size.z);
-    }
-    return frag_world_position;
-}
-
 #[spirv(fragment)]
 pub fn fragment(
     #[spirv(frag_coord)] in_frag_coord: Vec4,
@@ -66,38 +48,34 @@ pub fn fragment(
     uv: Vec2,
     output: &mut Vec4,
 ) {
-    let svt = MySvt { mem: svt };
+    let seed = in_frag_coord.xy();
+    let mut rng = SRng { seed };
+
     let total_dim = MySvt::TOTAL_DIM as f32;
     let map_size = Vec3::splat(total_dim);
-    let frag_world_position =
-        frag_world_position_from_face(from_simulation_coor(map_size), face, uv);
+    let frag_world_position = util::frag_world_position_from_face(from_simulation_coor(map_size), face, uv);
 
     //render the distance for debug purposes
     // let distance = (frag_world_position - view.world_position).length();
     // *output = Vec3::splat(distance / (total_dim as f32)).extend(1.0);
     // return;
 
-    let seed = in_frag_coord.xy();
-    let mut rng = SRng { seed };
-
-    let mut ray = Ray3 {
+    let ray = Ray3 {
         pos: to_simulation_coor(view.world_position),
         dir: to_simulation_coor(frag_world_position - view.world_position).normalize_or_zero(),
     };
+
+    let svt = MySvt { mem: svt };
     let env_color = ray::shade_ray(&mut rng, svt, ray);
 
-    // let color = clamp(env_color, Vec4(0.0), Vec4(1.0));
-    // let color = color_over(env_color, Vec4(0.5, 0.5, 0.5, 1.0));
     *output = env_color.extend(1.0);
-    // no need for gamma correction
-    //return Vec4(pow(env_color, Vec3(1.0/2.2)), 1.0);
 }
 
 #[spirv(compute(threads(8, 8)))]
 pub fn compute(
     #[spirv(uniform, descriptor_set = 0, binding = 0)] uniform: &EnvShaderUniform,
     #[spirv(descriptor_set = 1, binding = 0)] src_tex: &Image!(2D, format=rgba32f, sampled=false),
-    #[spirv(descriptor_set = 1, binding = 1)] desc_tex: &Image!(2D, format=rgba32f, sampled=false),
+    #[spirv(descriptor_set = 1, binding = 1)] _desc_tex: &Image!(2D, format=rgba32f, sampled=false),
     #[spirv(storage_buffer, descriptor_set = 1, binding = 2)] svt: &[usvt],
     #[spirv(global_invocation_id)] global_ix: UVec3,
 ) {
@@ -129,7 +107,7 @@ pub fn compute(
 }
 
 // A simple vert/frag shader to copy an image to the swapchain.
-
+// from https://github.com/googlefonts/compute-shader-101
 #[spirv(vertex)]
 pub fn compute_vertex(
     #[spirv(vertex_index)] in_vertex_index: u32,

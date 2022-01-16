@@ -3,7 +3,7 @@ use std::{
     path::{Path},
 };
 
-use bsoky_no_std::{BLOCK_DIM, LEVEL_COUNT, MySvtMut};
+use bsoky_shader::{BLOCK_DIM, LEVEL_COUNT, MySvtMut};
 use common::math::svt::*;
 use common::math::*;
 

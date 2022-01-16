@@ -40,10 +40,6 @@ impl<REF: Deref<Target = [usvt]>, const BLOCK_DIM: usvt, const LEVEL_COUNT: usiz
     pub const BLOCK_SIZE: usvt = BLOCK_DIM * BLOCK_DIM * BLOCK_DIM;
     pub const TOTAL_DIM: usvt = BLOCK_DIM.pow(LEVEL_COUNT as usvt);
 
-    pub fn total_dim() -> usvt {
-        Self::TOTAL_DIM
-    }
-
     // TODO memory allocation
     pub fn root_block_index(&self) -> usize {
         return 1;

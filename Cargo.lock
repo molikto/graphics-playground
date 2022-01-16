@@ -844,7 +844,7 @@ dependencies = [
  "bevy-inspector-egui",
  "bevy_crevice",
  "bevy_egui",
- "bsoky-no-std",
+ "bsoky-shader",
  "common",
  "derive_more",
  "dolly",
@@ -874,20 +874,12 @@ dependencies = [
 ]
 
 [[package]]
-name = "bsoky-no-std"
+name = "bsoky-shader"
 version = "0.1.0"
 dependencies = [
  "bevy_crevice",
  "common",
  "glam",
-]
-
-[[package]]
-name = "bsoky-shader"
-version = "0.1.0"
-dependencies = [
- "bsoky-no-std",
- "common",
  "spirv-std",
 ]
 

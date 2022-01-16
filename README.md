@@ -37,7 +37,6 @@ run with `cargo run -p bosky --release`
 * engine
     * [ ] creating RenderNode in bevy is really not a good exp, lot of code
     * [ ] shader hot reloading of rust-gpu shader in bevy
-    * [ ] merge the "no-std" crates with common crates and use cfg instead
     * [ ] group everything better with switchable demo, adjustable specialized constants
 
 ## problems with rust-gpu

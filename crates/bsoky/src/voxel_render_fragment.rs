@@ -12,7 +12,7 @@ use bevy::{
     }, utils::Instant,
 };
 use bevy_common::RevertBox;
-use bsoky_no_std::*;
+use bsoky_shader::*;
 use common::math::svt::usvt;
 use common::math::vec::Vec3;
 

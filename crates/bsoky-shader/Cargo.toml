@@ -14,4 +14,7 @@ spirv-std = { git = "https://github.com/EmbarkStudios/rust-gpu/", features = [
     "glam",
 ] }
 common = { path = "../common" }
-bsoky-no-std = { path = "../bsoky-no-std" }
+
+[target.'cfg(not(target_arch = "spirv"))'.dependencies]
+glam = { version = "0.20", features = ["bytemuck"] }
+bevy_crevice = { version = "0.6.0", features=["glam" ] }

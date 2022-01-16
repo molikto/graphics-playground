@@ -350,7 +350,7 @@ mod tests {
     #[test]
     fn simple_debug() {
         let mut svt = MySvt::init(0);
-        let size = (MySvt::total_dim() - 10) as f32;
+        let size = (MySvt::TOTAL_DIM - 10) as f32;
         let mut rng = rand::thread_rng();
         for i in 0..1000 {
             let v = vec3(rng.gen(), rng.gen(), rng.gen()) * size;
