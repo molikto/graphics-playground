@@ -1,7 +1,6 @@
 use std::cmp::Ordering;
 
-use super::{Ray3, f32, aabb::Aabb3};
-
+use super::math::*;
 
 pub trait BaseHitResult {
   fn t(self: &Self) -> f32;

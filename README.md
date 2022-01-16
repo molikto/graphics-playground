@@ -9,10 +9,10 @@ run with `cargo run -p bosky --release`
 
 ## done and TODOs
 
-* data structures (in `common-no-std`)
+* data structures (in `common`)
     * sparse voxel N-tree (`svt.rs`) and ray casting: no children masks, each voxel is 4 byte pointer or data
         * performance
-            * [X] compare with ESVO performance -- see [here](crates/common-no-std/SVT_PERF.md) (~5 times slower)
+            * [X] compare with ESVO performance -- see [here](crates/common/SVT_PERF.md) (~5 times slower)
             * [ ] optimize it to be faster
                 * [ ] **integrate origial GLSL ESVO**
                 * [ ] **write a rust-gpu version of ESVO**
@@ -22,7 +22,7 @@ run with `cargo run -p bosky --release`
             * [ ] redirect rays
         * API
             * [ ] load `.vox` file
-* material (in `common-no-std`)
+* material (in `common`)
     * [X] basic material in "One Weekend"
     * [ ] glass material seems wrong??
     * [ ] volume fog material in "Next Week"

@@ -1,6 +1,6 @@
 #![cfg_attr(all(target_arch = "spirv", not(test)), no_std)]
 
-use common_no_std::{*, svt::*};
+use common::{*, svt::*};
 
 // pub const BLOCK_DIM: usvt = 2;
 // pub const LEVEL_COUNT: usize = 10;

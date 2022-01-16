@@ -13,5 +13,5 @@ target = "spirv-unknown-spv1.5"
 spirv-std = { git = "https://github.com/EmbarkStudios/rust-gpu/", features = [
     "glam",
 ] }
-common-no-std = { path = "../common-no-std" }
+common = { path = "../common" }
 bsoky-no-std = { path = "../bsoky-no-std" }

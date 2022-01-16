@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-common-no-std = { path="../common-no-std" }
+common = { path="../common" }
 
 [target.'cfg(not(target_arch = "spirv"))'.dependencies]
 glam = { version = "0.20", features = ["bytemuck"] }

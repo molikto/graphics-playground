@@ -1,9 +1,7 @@
 use std::mem::swap;
 
-use super::vec::*;
-use super::aabb::*;
+use super::math::*;
 use super::bvh::*;
-use super::ray::*;
 
 #[derive(Copy, Clone, Debug)]
 pub struct HitRecord {

@@ -6,7 +6,7 @@
 )]
 
 use bsoky_no_std::*;
-use common_no_std::{math::*, shader::base_uniform::*, svt::*};
+use common::{math::*, shader::base_uniform::*, svt::*};
 #[cfg(not(target_arch = "spirv"))]
 use spirv_std::macros::spirv;
 use spirv_std::num_traits::Float;
