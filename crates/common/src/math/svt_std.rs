@@ -55,8 +55,7 @@ impl<const BLOCK_DIM: usvt, const LEVEL_COUNT: usize> Svt<Vec<usvt>, BLOCK_DIM, 
     // }
 
     fn alloc_new_block(&mut self, material: usvt) -> usvt {
-        let cur_top = self.mem[0];
-        self.mem[0] = cur_top + 1;
+        let cur_top = self.block_count();
         // here we need to allocate extra block, some padding issues...
         while self.mem.len() < ((cur_top + 1) as usize) * (Self::BLOCK_SIZE as usize) {
             self.mem.push(material);
@@ -65,7 +64,7 @@ impl<const BLOCK_DIM: usvt, const LEVEL_COUNT: usize> Svt<Vec<usvt>, BLOCK_DIM, 
             self.mem[(cur_top as usize) * (Self::BLOCK_SIZE as usize) + (i as usize)] =
                 Self::new_block(true, material);
         }
-        return cur_top;
+        return cur_top as usvt;
     }
 
     // the position is a "representative" position

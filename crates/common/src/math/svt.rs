@@ -45,7 +45,7 @@ impl<REF: Deref<Target = [usvt]>, const BLOCK_DIM: usvt, const LEVEL_COUNT: usiz
 
     // TODO memory allocation
     pub fn root_block_index(&self) -> usize {
-        return 1;
+        return 0;
     }
 
     //
