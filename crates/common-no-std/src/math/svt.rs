@@ -36,32 +36,6 @@ pub struct Svt<REF: Deref<Target = [usvt]>, const BLOCK_DIM: usvt, const LEVEL_C
     pub mem: REF,
 }
 
-const EPS: f32 = 3.552713678800501e-15;
-
-fn de_eps(d: &mut Vec3) {
-    d.x = if d.x.abs() > EPS {
-        d.x
-    } else if d.x >= 0.0 {
-        EPS
-    } else {
-        -EPS
-    };
-    d.y = if d.y.abs() > EPS {
-        d.y
-    } else if d.y >= 0.0 {
-        EPS
-    } else {
-        -EPS
-    };
-    d.z = if d.z.abs() > EPS {
-        d.z
-    } else if d.z >= 0.0 {
-        EPS
-    } else {
-        -EPS
-    };
-}
-
 impl<REF: Deref<Target = [usvt]>, const BLOCK_DIM: usvt, const LEVEL_COUNT: usize>
     Svt<REF, BLOCK_DIM, LEVEL_COUNT>
 {
@@ -71,26 +45,6 @@ impl<REF: Deref<Target = [usvt]>, const BLOCK_DIM: usvt, const LEVEL_COUNT: usiz
     // TODO memory allocation
     pub fn root_block_index(&self) -> usize {
         return 1;
-    }
-
-    pub fn block_count(&self) -> usize {
-        return self.mem[0] as usize - self.root_block_index();
-    }
-
-    pub fn usvt_used(&self) -> usize {
-        return (self.block_count() + 1) * (Self::BLOCK_SIZE as usize);
-    }
-
-    // in bytes
-    pub fn memory_used(&self) -> usize {
-        return self.usvt_used() * if (usvt::MAX as u32) == u32::MAX { 4 } else { 2 };
-    }
-
-    // memory ratio assuming each block use a byte of memory.
-    pub fn memory_ratio(&self) -> f32 {
-        let size = self.memory_used() as f64;
-        let native_size = ((BLOCK_DIM as f64).powf(LEVEL_COUNT as f64)).powf(3.0);
-        return (size / native_size) as f32;
     }
 
     //
@@ -307,9 +261,6 @@ impl<REF: Deref<Target = [usvt]>, const BLOCK_DIM: usvt, const LEVEL_COUNT: usiz
 }
 
 #[cfg(not(target_arch = "spirv"))]
-use std::{collections::hash_map::DefaultHasher, hash::Hasher, vec::*};
-
-#[cfg(not(target_arch = "spirv"))]
 pub type SvtMut<const BLOCK_DIM: usvt, const LEVEL_COUNT: usize> =
     Svt<Vec<usvt>, BLOCK_DIM, LEVEL_COUNT>;
 
@@ -324,11 +275,32 @@ impl<const BLOCK_DIM: usvt, const LEVEL_COUNT: usize> Svt<Vec<usvt>, BLOCK_DIM, 
         return svt;
     }
 
+    pub fn block_count(&self) -> usize {
+        return self.usvo_used() / (Self::BLOCK_SIZE as usize);
+    }
+
+    pub fn usvo_used(&self) -> usize {
+        return self.mem.len()
+    }
+
+    // in bytes
+    pub fn memory_used(&self) -> usize {
+        return self.usvo_used() * if (usvt::MAX as u32) == u32::MAX { 4 } else { 2 };
+    }
+
+    // memory ratio assuming each block use a byte of memory.
+    pub fn memory_ratio(&self) -> f32 {
+        let size = self.memory_used() as f64;
+        let native_size = ((BLOCK_DIM as f64).powf(LEVEL_COUNT as f64)).powf(3.0);
+        return (size / native_size) as f32;
+    }
+
     pub fn capacity(&self) -> usize {
         self.mem.capacity()
     }
 
     // pub fn checksum(&self) -> u64 {
+    //        use std::{collections::hash_map::DefaultHasher, hash::Hasher, vec::*};
     //     let mut hasher = DefaultHasher::new();
     //     let usvt_used =  self.usvt_used();
     //     for i in 0..usvt_used {
@@ -337,9 +309,9 @@ impl<const BLOCK_DIM: usvt, const LEVEL_COUNT: usize> Svt<Vec<usvt>, BLOCK_DIM, 
     //     hasher.finish()
     // }
 
-    fn remove_blocks_at_index(&mut self, index: usize) {
-        // TODO remove unused blocks
-    }
+    // fn remove_blocks_at_index(&mut self, index: usize) {
+    //     // TODO remove unused blocks
+    // }
 
     fn alloc_new_block(&mut self, material: usvt) -> usvt {
         let cur_top = self.mem[0];
@@ -422,7 +394,7 @@ mod tests {
         const BLOCK_DIM: usvt = 2;
         const LEVEL: usize = 2;
         let mut svt = Svt::<Vec<usvt>, BLOCK_DIM, LEVEL>::init(0);
-        let TOTAL = BLOCK_DIM.pow(LEVEL as u32);
+        let total = BLOCK_DIM.pow(LEVEL as u32);
         // svt.set(Usvt3(0, 0, 0), 1);
         svt.set(Usvt3::new(0, 2, 1), 2);
         svt.set(Usvt3::new(2, 0, 1), 3);
@@ -435,7 +407,7 @@ mod tests {
                     pos: Vec3::new(-100.0, -100.0, 0.0),
                     dir: (Vec3::new(i as f32, image_size as f32, image_size as f32)
                         / (image_size as f32)
-                        * (TOTAL as f32)).normalize(),
+                        * (total as f32)).normalize(),
                 };
                 // let ray = Ray3 {
                 //     pos: Vec3::new(i as f32 + 0.4, j as f32 + 0.4, 0.1) / (image_size as f32) * (TOTAL as f32),
@@ -468,14 +440,14 @@ mod tests {
             let v = v.min(Vec3::splat(size)).max(Vec3::ZERO);
             svt.set(vec3_to_usvt3(v), i as usvt);
         }
-        for i in 0..100000 {
+        for _ in 0..100000 {
             let error_code = svt.traverse_ray(
                 300,
                 Ray3 {
                     pos: vec3(rng.gen(), rng.gen(), rng.gen()) * size,
                     dir: (vec3(rng.gen(), rng.gen(), rng.gen()) * size * 2.0 - Vec3::splat(size)).try_normalize_or(Vec3::X),
                 },
-                |t_hit, block, mask| {
+                |_, _, _| {
                     return false;
                 },
             );

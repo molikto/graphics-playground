@@ -13,7 +13,6 @@ use spirv_std::num_traits::Float;
 use spirv_std::*;
 
 mod ray;
-mod voxel;
 
 #[spirv(vertex)]
 pub fn vertex(
@@ -94,7 +93,6 @@ pub fn fragment(
     //return Vec4(pow(env_color, Vec3(1.0/2.2)), 1.0);
 }
 
-
 #[spirv(compute(threads(8, 8)))]
 pub fn compute(
     #[spirv(uniform, descriptor_set = 0, binding = 0)] uniform: &EnvShaderUniform,
@@ -104,36 +102,28 @@ pub fn compute(
     #[spirv(global_invocation_id)] global_ix: UVec3,
 ) {
     let size = uniform.size;
+    let mut frag_coord = uvec2(global_ix.x, size.y - global_ix.y).as_vec2();
+    let seed = frag_coord.xy() + uniform.time;
+    let mut rng = SRng { seed };
+    frag_coord = frag_coord + rng.gen_vec2();
+    frag_coord = frag_coord / vec2(size.x as f32, size.y as f32) * 2.0 - 1.0;
+
+    let pos = (uniform.camera_transform * Vec3::ZERO.extend(1.0)).truncate();
+    let mut dir = (uniform.inverse_view * frag_coord.extend(-1.0).extend(1.0)).truncate();
+    dir = (uniform.camera_transform * dir.extend(0.0))
+        .truncate()
+        .normalize();
+    let ray = Ray3 { pos, dir };
+
+    let svt = MySvt { mem: svt };
+    let env_color = ray::shade_ray(&mut rng, svt, ray);
+
+    let tex_coor = global_ix.truncate().as_ivec2();
+    let prev_color: Vec4 = src_tex.read(tex_coor);
+    let frame_index = uniform.frame_index as f32;
+    let frag_color = (frame_index * prev_color.truncate() + env_color) / (frame_index + 1.0);
+    let frag_color = frag_color.extend(1.0);
     if global_ix.x < size.x && global_ix.y < size.y {
-        let mut frag_coord = uvec2(global_ix.x, size.y - global_ix.y).as_vec2();
-        let seed = frag_coord.xy() + uniform.time;
-        let mut rng = SRng { seed };
-        frag_coord = frag_coord + rng.gen_vec2();
-        frag_coord = frag_coord / vec2(size.x as f32, size.y as f32) * 2.0 - 1.0;
-
-        let pos = (uniform.camera_transform * Vec3::ZERO.extend(1.0)).truncate();
-        let mut dir = (uniform.inverse_view * frag_coord.extend(-1.0).extend(1.0)).truncate();
-        dir = (uniform.camera_transform * dir.extend(0.0)).truncate().normalize();
-        let ray = Ray3 { pos, dir };
-
-        let svt = MySvt { mem: svt };
-        let env_color = ray::shade_ray(&mut rng, svt, ray);
-
-        // debug code
-        //let frag_color = ((Vec3::splat(direction.normalize().y) + 0.4)).extend(1.0);
-
-        // debug code
-        // let frag_color = vec4(
-        //     frag_coord.x + 0.5,
-        //     frag_coord.y + 0.5,
-        //     uniform.time.sin(),
-        //     1.0,
-        // );
-        let tex_coor = global_ix.truncate().as_ivec2();
-        let prev_color: Vec4 = src_tex.read(tex_coor);
-        let frame_index = uniform.frame_index as f32;
-        let frag_color = (frame_index * prev_color.truncate() + env_color) / (frame_index + 1.0);
-        let frag_color = frag_color.extend(1.0);
         unsafe { src_tex.write(tex_coor, frag_color) }
     }
 }

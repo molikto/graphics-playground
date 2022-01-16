@@ -14,6 +14,8 @@ run with `cargo run -p bosky --release`
         * performance
             * [X] compare with ESVO performance -- see [here](crates/common-no-std/SVT_PERF.md) (~5 times slower)
             * [ ] optimize it to be faster
+                * [ ] **integrate origial GLSL ESVO**
+                * [ ] **write a rust-gpu version of ESVO**
                 * [ ] **write a wgsl version of the structure see if it's me...**
                 * [ ] why the compute shader version is even slower?
             * [ ] beam optimization
@@ -28,9 +30,15 @@ run with `cargo run -p bosky --release`
     * [ ] more physics based materials?
 * renderer (in `bosky`)
     * [X] progressive rendering (Bevy `RenderGraph`)
-        * [ ] resize window
-    * [ ] realtime rendering with TAA or DLSS or???
+        * [ ] **resize window**
+    * [ ] TAA???
+    * [ ] DLSS???
     * [ ] realtime rendering hardware API
+* engine
+    * [ ] creating RenderNode in bevy is really not a good exp, lot of code
+    * [ ] shader hot reloading of rust-gpu shader in bevy
+    * [ ] merge the "no-std" crates with common crates and use cfg instead
+    * [ ] group everything better with switchable demo, adjustable specialized constants
 
 ## problems with rust-gpu
 

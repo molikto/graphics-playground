@@ -287,3 +287,34 @@ impl Rem<u16> for SUVec3 {
         }
     }
 }
+
+
+
+
+//// legacy code
+
+const EPS: f32 = 3.552713678800501e-15;
+
+fn de_eps(d: &mut Vec3) {
+    d.x = if d.x.abs() > EPS {
+        d.x
+    } else if d.x >= 0.0 {
+        EPS
+    } else {
+        -EPS
+    };
+    d.y = if d.y.abs() > EPS {
+        d.y
+    } else if d.y >= 0.0 {
+        EPS
+    } else {
+        -EPS
+    };
+    d.z = if d.z.abs() > EPS {
+        d.z
+    } else if d.z >= 0.0 {
+        EPS
+    } else {
+        -EPS
+    };
+}
