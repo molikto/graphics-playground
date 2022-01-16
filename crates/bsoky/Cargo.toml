@@ -30,7 +30,6 @@ env_logger = "0.9"
 noise = "0.7"
 morton-encoding = "2.0.1"
 
-wgpu = "*"
 dolly = "0.1.4"
 egui = "0.16.1"
 bevy = "0.6.0"
@@ -38,6 +37,10 @@ bevy_crevice = { version = "0.6.0", features=["glam" ] }
 
 bevy_egui = "0.10.0"
 bevy-inspector-egui = "0.7.1"
+
+
+wgpu = { version = "*", features = ["glsl"] }
+naga = "*"
 
 common = { path = "../common" }
 bevy-common = { path = "../bevy-common" }

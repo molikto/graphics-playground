@@ -1,4 +1,6 @@
 
+use std::borrow::Cow;
+
 use bevy::{
     core_pipeline::{
         draw_3d_graph::{self, input::VIEW_ENTITY},
@@ -28,7 +30,7 @@ use wgpu::{
     PrimitiveState, RenderPassDescriptor, RenderPipeline, RenderPipelineDescriptor,
     SamplerBindingType, SamplerDescriptor, ShaderModule, ShaderStages, StorageTextureAccess,
     TextureAspect, TextureDescriptor, TextureDimension, TextureFormat, TextureSampleType,
-    TextureUsages, TextureViewDescriptor, TextureViewDimension, VertexState,
+    TextureUsages, TextureViewDescriptor, TextureViewDimension, VertexState, ShaderModuleDescriptor, ShaderSource,
 };
 
 const WORKGROUP_SIZE: u32 = 8;
@@ -102,7 +104,7 @@ fn create_compute_pipeline(
         label: None,
         layout: Some(&pipeline_layout),
         module,
-        entry_point: "compute",
+        entry_point: "main",
     });
 
     (pipeline, texture_bind_group_layout, uniform_layout)
@@ -174,11 +176,13 @@ impl FromWorld for EnvRenderPipeline {
         //     primary_window.physical_height(),
         // );
 
-        let shader_source = include_spirv_raw!("../assets/env/shader.spv");
-        let module = unsafe { render_device.create_shader_module_spirv(&shader_source) };
+        let module = include_spirv_raw!("../assets/env/shader.spv");
+        let module = unsafe { render_device.create_shader_module_spirv(&module) };
+        let module_spv= include_spirv_raw!("../assets/env/svt.spv");
+        let module_spv= unsafe { render_device.create_shader_module_spirv(&module_spv) };
 
         let (compute_pipeline, compute_texture_bg_layout, compute_uniform_bg_layout) =
-            create_compute_pipeline(&module, &render_device);
+            create_compute_pipeline(&module_spv, &render_device);
 
         let tex_desc = TextureDescriptor {
             label: None,
