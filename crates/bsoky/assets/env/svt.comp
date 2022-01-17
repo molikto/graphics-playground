@@ -123,14 +123,14 @@ bool RayMarchLeaf(vec3 o, vec3 d, out vec3 o_pos, out vec3 o_color, out vec3 o_n
 		vec3 t_corner = pos * t_coef - t_bias;
 		float tc_max = min(min(t_corner.x, t_corner.y), t_corner.z);
 
-		if ((cur & 0x80000000u) != 0 && t_min <= t_max) {
+		if (cur != 0 && t_min <= t_max) {
 			// INTERSECT
 			float tv_max = min(t_max, tc_max);
 			float half_scale_exp2 = scale_exp2 * 0.5f;
 			vec3 t_center = half_scale_exp2 * t_coef + t_corner;
 
 			if (t_min <= tv_max) {
-				if ((cur & 0x40000000u) != 0) // leaf node
+				if ((cur & 0x80000000u) == 0) // leaf node
 					break;
 
 				// PUSH
@@ -140,7 +140,7 @@ bool RayMarchLeaf(vec3 o, vec3 d, out vec3 o_pos, out vec3 o_color, out vec3 o_n
 				}
 				h = tc_max;
 
-				parent = cur & 0x3fffffffu;
+				parent = (cur & 0x3fffffffu) << 3;
 
 				idx = 0u;
 				--scale;
