@@ -10,6 +10,10 @@ bf refacotor  90                    3/20 (120, 60)                              
 af refacotor: 56                    2/20 (142,60)                                 (60 fps ish)   82.5MB
 es: 3ms       30                    5/20 (86,46)                                  (280fps ish)   51MB
 ```
+glsl ported to here, compute shader 37us, 86vr
+rewrote in rust-gpu, compute shader 52us, 135vr
+
+
 
 5 times more thread excuation
 

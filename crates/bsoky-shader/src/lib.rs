@@ -21,56 +21,6 @@ use common::{math::*, shader::base_uniform::*, svt::*};
 use spirv_std::macros::spirv;
 use spirv_std::*;
 
-#[spirv(vertex)]
-pub fn vertex(
-    #[spirv(vertex_index)] in_vertex_index: u32,
-    #[spirv(uniform, descriptor_set = 0, binding = 0)] view: &ViewUniform,
-    #[spirv(uniform, descriptor_set = 2, binding = 0)] mesh: &MeshUniform,
-    position: Vec3,
-    _normal: Vec3,
-    uv: Vec2,
-    #[spirv(position)] out_clip_position: &mut Vec4,
-    #[spirv(flat)] out_face: &mut u32,
-    out_uv: &mut Vec2,
-) {
-    let world_position = mesh.transform * position.extend(1.0);
-    *out_clip_position = view.view_proj * world_position;
-    *out_face = in_vertex_index / 4;
-    *out_uv = uv;
-}
-
-#[spirv(fragment)]
-pub fn fragment(
-    #[spirv(frag_coord)] in_frag_coord: Vec4,
-    #[spirv(uniform, descriptor_set = 0, binding = 0)] view: &ViewUniform,
-    #[spirv(storage_buffer, descriptor_set = 1, binding = 0)] svt: &[usvt],
-    #[spirv(flat)] face: u32,
-    uv: Vec2,
-    output: &mut Vec4,
-) {
-    let seed = in_frag_coord.xy();
-    let mut rng = SRng { seed };
-
-    let total_dim = MySvt::TOTAL_DIM as f32;
-    let map_size = Vec3::splat(total_dim);
-    let frag_world_position = util::frag_world_position_from_face(from_simulation_coor(map_size), face, uv);
-
-    //render the distance for debug purposes
-    // let distance = (frag_world_position - view.world_position).length();
-    // *output = Vec3::splat(distance / (total_dim as f32)).extend(1.0);
-    // return;
-
-    let ray = Ray3 {
-        pos: to_simulation_coor(view.world_position),
-        dir: to_simulation_coor(frag_world_position - view.world_position).normalize_or_zero(),
-    };
-
-    let svt = MySvt { mem: svt };
-    let env_color = ray::shade_ray(&mut rng, svt, ray);
-
-    *output = env_color.extend(1.0);
-}
-
 #[spirv(compute(threads(8, 8)))]
 pub fn compute(
     #[spirv(uniform, descriptor_set = 0, binding = 0)] uniform: &EnvShaderUniform,
@@ -81,22 +31,19 @@ pub fn compute(
 ) {
     let size = uniform.size;
     let mut frag_coord = vec2(global_ix.x as f32, global_ix.y as f32);
-    let seed = frag_coord.xy() + uniform.time;
-    let mut rng = SRng { seed };
-    frag_coord = frag_coord + rng.gen_vec2();
+    frag_coord = frag_coord;
 
     let pos = uniform.camera_pos;
     let dir = uniform.camera_look + frag_coord.x * uniform.camera_h + frag_coord.y * uniform.camera_v;
-    let ray = Ray3 { pos, dir };
 
     let svt = MySvt { mem: svt };
-    let env_color = ray::shade_ray(&mut rng, svt, ray);
+
+    let error_code = svt.traverse_ray_oct(pos, dir);
+    let count = error_code as f32;
+    let env_color = Vec3::splat((count) / 128.0);
 
     let tex_coor = global_ix.truncate().as_ivec2();
-    let prev_color: Vec4 = src_tex.read(tex_coor);
-    let frame_index = uniform.frame_index as f32;
-    let frag_color = (frame_index * prev_color.truncate() + env_color) / (frame_index + 1.0);
-    let frag_color = frag_color.extend(1.0);
+    let frag_color = env_color.extend(1.0);
     if global_ix.x < size.x && global_ix.y < size.y {
         unsafe { src_tex.write(tex_coor, frag_color) }
     }

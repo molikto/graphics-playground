@@ -37,8 +37,8 @@ fn main() {
         cwd().parent().unwrap().join("bsoky-shader"),
         "spirv-unknown-spv1.5",
     )
-    .print_metadata(MetadataPrintout::Full)
-    .spirv_metadata(SpirvMetadata::Full)
+    //.print_metadata(MetadataPrintout::Full)
+    //.spirv_metadata(SpirvMetadata::Full)
     .release(true)
     .build()
     .unwrap();

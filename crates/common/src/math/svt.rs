@@ -115,21 +115,15 @@ impl<REF: Deref<Target = [usvt]>, const BLOCK_DIM: usvt, const LEVEL_COUNT: usiz
 
     // from https://github.com/AdamYuan/SparseVoxelOctree
     #[inline]
-    pub fn traverse_ray_oct<C>(&self, max_count: u32, ray: Ray3, mut closure: C) -> i32
-    where
-        C: FnMut(
-            BlockRayIntersectionInfo,
-            BlockRayIntersectionInfo,
-            BlockInfo<BLOCK_DIM, LEVEL_COUNT>,
-        ) -> bool,
+    pub fn traverse_ray_oct(&self, mut o: Vec3, mut d: Vec3) -> i32
     {
         const STACK_SIZE: usize = 23;
         let mut stack_node = [0 as u32; STACK_SIZE];
         let mut stack_t_max = [0.0 as f32; STACK_SIZE];
         let mut iter = 0;
         // The octree is assumed to reside at coordinates [1, 2].
-        let o = ray.pos / (Self::TOTAL_DIM as f32) + 1.0;
-        let d = ray.dir.de_eps(Self::EPS);
+        o = o / (Self::TOTAL_DIM as f32) + 1.0;
+        d = d.de_eps(Self::EPS);
         // Precompute the coefficients of tx(x), ty(y), and tz(z).
         let t_coef = 1.0 / -d.abs();
         let mut t_bias = t_coef * o;
@@ -287,26 +281,12 @@ impl<REF: Deref<Target = [usvt]>, const BLOCK_DIM: usvt, const LEVEL_COUNT: usiz
                 cur = 0;
             }
         }
-        closure(
-            BlockRayIntersectionInfo { mask: pos, t: 0.0 },
-            BlockRayIntersectionInfo { mask: pos, t: 0.0 },
-            BlockInfo { level: 0, data: 1 },
-        );
         iter
     }
 
     #[inline]
-    pub fn traverse_ray<C>(&self, max_count: u32, ray: Ray3, mut closure: C) -> i32
-    where
-        C: FnMut(
-            BlockRayIntersectionInfo,
-            BlockRayIntersectionInfo,
-            BlockInfo<BLOCK_DIM, LEVEL_COUNT>,
-        ) -> bool,
+    pub fn traverse_ray(&self, max_count: u32, ray: Ray3) -> i32
     {
-        if BLOCK_DIM == 2 {
-            return self.traverse_ray_oct(max_count, ray, closure);
-        }
         let mut count: u32 = 0;
         // TODO there are still cases where it infinite loop..
         // the max dim we can have is 8^8, otherwise it will not work because of floating point issue
@@ -375,11 +355,6 @@ impl<REF: Deref<Target = [usvt]>, const BLOCK_DIM: usvt, const LEVEL_COUNT: usiz
                     mask = ts.step_f(t) * ray_dir_signum;
                     if mask == Vec3::ZERO {
                         return -2;
-                    }
-                    let block_info = BlockInfo { level, data: index };
-                    let ret = closure(incident, BlockRayIntersectionInfo { t, mask }, block_info);
-                    if ret {
-                        return count as i32;
                     }
                     break;
                 } else {
