@@ -1,4 +1,6 @@
-#![cfg_attr(all(target_arch = "spirv", not(test)), no_std)]
+#![cfg_attr(all(target_arch = "spirv", not(test)), no_std, feature(asm))]
+#![feature(asm_experimental_arch)]
+
 pub mod lang;
 #[cfg(not(target_arch = "spirv"))]
 mod lang_std;

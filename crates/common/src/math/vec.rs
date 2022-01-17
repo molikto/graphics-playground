@@ -32,7 +32,6 @@ impl MyUVecExt for UVec3 {
 }
 
 impl MyVecExt for Vec3 {
-
     fn step_f(self, other: f32) -> Self {
         // TODO intrinsics
         vec3(
@@ -124,7 +123,7 @@ impl MyVecExt for Vec2 {
             other
         }
     }
-    
+
     #[inline]
     fn get(self, a: usize) -> f32 {
         return match a {
@@ -132,7 +131,6 @@ impl MyVecExt for Vec2 {
             _ => self.y,
         };
     }
-
 }
 
 pub trait MyVec2Ext {
@@ -159,10 +157,35 @@ pub trait MyVec3Ext {
     fn reflect(self, normal: Self) -> Self;
     fn sin(self) -> Vec3;
     fn sign_bit(self) -> Vec3;
+    fn de_eps(self, eps: f32) -> Vec3;
 }
 
 impl MyVec3Ext for Vec3 {
-
+    fn de_eps(self, eps: f32) -> Vec3 {
+        let mut d = self;
+        d.x = if d.x.abs() > eps {
+            d.x
+        } else if d.x >= 0.0 {
+            eps
+        } else {
+            -eps
+        };
+        d.y = if d.y.abs() > eps {
+            d.y
+        } else if d.y >= 0.0 {
+            eps
+        } else {
+            -eps
+        };
+        d.z = if d.z.abs() > eps {
+            d.z
+        } else if d.z >= 0.0 {
+            eps
+        } else {
+            -eps
+        };
+        d
+    }
 
     #[inline]
     fn omit_axis(self, a: usize) -> Vec2 {
@@ -194,10 +217,7 @@ impl MyVec3Ext for Vec3 {
     }
 }
 
-
-
 // suvec3
-
 
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub struct SUVec3 {
@@ -205,7 +225,6 @@ pub struct SUVec3 {
     pub y: u16,
     pub z: u16,
 }
-
 
 pub fn suvec3(x: u16, y: u16, z: u16) -> SUVec3 {
     SUVec3 { x, y, z }
@@ -221,7 +240,6 @@ impl Add<SUVec3> for SUVec3 {
             z: self.z + rhs.z,
         }
     }
-
 }
 
 impl Zero for SUVec3 {
@@ -298,33 +316,4 @@ impl Rem<u16> for SUVec3 {
     }
 }
 
-
-
-
 //// legacy code
-
-const EPS: f32 = 3.552713678800501e-15;
-
-fn de_eps(d: &mut Vec3) {
-    d.x = if d.x.abs() > EPS {
-        d.x
-    } else if d.x >= 0.0 {
-        EPS
-    } else {
-        -EPS
-    };
-    d.y = if d.y.abs() > EPS {
-        d.y
-    } else if d.y >= 0.0 {
-        EPS
-    } else {
-        -EPS
-    };
-    d.z = if d.z.abs() > EPS {
-        d.z
-    } else if d.z >= 0.0 {
-        EPS
-    } else {
-        -EPS
-    };
-}
