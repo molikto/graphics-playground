@@ -1,8 +1,5 @@
-
 use bevy::{
-    core_pipeline::{
-        draw_3d_graph::{self, input::VIEW_ENTITY},
-    },
+    core_pipeline::draw_3d_graph::{self, input::VIEW_ENTITY},
     math::uvec2,
     prelude::*,
     render::{
@@ -14,7 +11,7 @@ use bevy::{
     },
     utils::Instant,
 };
-use bevy_crevice::{std140::{AsStd140, Std140}};
+use bevy_crevice::std140::{AsStd140, Std140};
 use bsoky_shader::*;
 use common::math::*;
 use wgpu::{
@@ -26,25 +23,35 @@ use wgpu::{
     ComputePassDescriptor, ComputePipeline, ComputePipelineDescriptor, Device, Extent3d,
     FilterMode, FragmentState, LoadOp, MultisampleState, Operations, PipelineLayoutDescriptor,
     PrimitiveState, RenderPassDescriptor, RenderPipeline, RenderPipelineDescriptor,
-    SamplerBindingType, SamplerDescriptor, ShaderModule, ShaderStages, StorageTextureAccess,
-    TextureAspect, TextureDescriptor, TextureDimension, TextureFormat, TextureSampleType,
-    TextureUsages, TextureViewDescriptor, TextureViewDimension, VertexState, ShaderModuleDescriptor, ShaderSource,
+    SamplerBindingType, SamplerDescriptor, ShaderModule, ShaderModuleDescriptor, ShaderSource,
+    ShaderStages, StorageTextureAccess, TextureAspect, TextureDescriptor, TextureDimension,
+    TextureFormat, TextureSampleType, TextureUsages, TextureViewDescriptor, TextureViewDimension,
+    VertexState,
 };
 
 const WORKGROUP_SIZE: u32 = 8;
 
 const TEXTURE_FORMAT: TextureFormat = TextureFormat::Rgba32Float;
 
+pub struct EnvRenderPipelineLayout {
+    compute_pipeline: ComputePipeline,
+    compute_uniform_bg_layout: BindGroupLayout,
+    compute_bg_layout: BindGroupLayout,
+    render_pipeline: RenderPipeline,
+    render_bg_layout: BindGroupLayout,
+    start_time: Instant,
+    svt: Buffer,
+}
+
+type CameraProp = (GlobalTransform, Mat4, u32);
+
+#[derive(Default)]
 pub struct EnvRenderPipeline {
     size: UVec2,
-    compute_bind_group: BindGroup,
-    compute_pipeline: ComputePipeline,
-    compute_uniform_buffer: Buffer,
-    compute_uniform_bind_group: BindGroup,
-    render_bind_group: BindGroup,
-    render_pipeline: RenderPipeline,
-    prev_camera_uniform: Option<(GlobalTransform, Mat4, u32)>,
-    start_time: Instant,
+    camera_prop: CameraProp,
+    compute_uniform_bg: Option<BindGroup>,
+    compute_bg: Option<BindGroup>,
+    render_bg: Option<BindGroup>,
 }
 
 fn create_compute_pipeline(
@@ -164,130 +171,37 @@ fn create_render_pipeline(
     (pipeline, bind_group_layout)
 }
 
-impl FromWorld for EnvRenderPipeline {
+impl FromWorld for EnvRenderPipelineLayout {
     fn from_world(world: &mut World) -> Self {
         let render_device = world.get_resource::<RenderDevice>().unwrap().wgpu_device();
-
-        let size = uvec2(1080, 720);
-        // let size = uvec2(
-        //     primary_window.physical_width(),
-        //     primary_window.physical_height(),
-        // );
 
         let module = include_spirv_raw!("../assets/env/shader.spv");
         let module = unsafe { render_device.create_shader_module_spirv(&module) };
         // let module_spv= include_spirv_raw!("../assets/env/svt.spv");
         // let module_spv= unsafe { render_device.create_shader_module_spirv(&module_spv) };
 
-        let (compute_pipeline, compute_texture_bg_layout, compute_uniform_bg_layout) =
+        let (compute_pipeline, compute_bg_layout, compute_uniform_bg_layout) =
             create_compute_pipeline(&module, &render_device);
 
-        let tex_desc = TextureDescriptor {
-            label: None,
-            size: Extent3d {
-                width: size.x,
-                height: size.y,
-                depth_or_array_layers: 1,
-            },
-            mip_level_count: 1,
-            sample_count: 1,
-            dimension: TextureDimension::D2,
-            format: TEXTURE_FORMAT,
-            usage: TextureUsages::COPY_DST
-                | TextureUsages::STORAGE_BINDING
-                | TextureUsages::TEXTURE_BINDING,
-        };
-        let tex_view_desc = TextureViewDescriptor {
-            aspect: TextureAspect::All,
-            base_mip_level: 0,
-            mip_level_count: None,
-            base_array_layer: 0,
-            array_layer_count: None,
-            ..Default::default()
-        };
-        let texture0 = render_device.create_texture(&tex_desc);
-        let texture1 = render_device.create_texture(&tex_desc);
-        let texture_view0 = texture0.create_view(&tex_view_desc);
-        let texture_view1 = texture1.create_view(&tex_view_desc);
+        let (render_pipeline, render_bg_layout) = create_render_pipeline(&module, &render_device);
 
-        let svt = super::create_svt::debug_create_rsvo();
+        let svt = super::create_svt::debug_create_sdf();
+
         let svt_contents: &[u8] = unsafe { svt.mem.as_slice().align_to::<u8>().1 };
         let svt_buffer = render_device.create_buffer_init(&BufferInitDescriptor {
             contents: svt_contents,
             label: None,
             usage: BufferUsages::STORAGE | BufferUsages::COPY_DST,
         });
-        let compute_bind_group = render_device.create_bind_group(&BindGroupDescriptor {
-            label: None,
-            layout: &compute_texture_bg_layout,
-            entries: &[
-                BindGroupEntry {
-                    binding: 0,
-                    resource: BindingResource::TextureView(&texture_view0),
-                },
-                BindGroupEntry {
-                    binding: 1,
-                    resource: BindingResource::TextureView(&texture_view1),
-                },
-                BindGroupEntry {
-                    binding: 2,
-                    resource: svt_buffer.as_entire_binding(),
-                },
-            ],
-        });
-        let (render_pipeline, render_bind_group_layout) =
-            create_render_pipeline(&module, &render_device);
-        let sampler = render_device.create_sampler(&SamplerDescriptor {
-            address_mode_u: AddressMode::ClampToEdge,
-            address_mode_v: AddressMode::ClampToEdge,
-            address_mode_w: AddressMode::ClampToEdge,
-            mag_filter: FilterMode::Nearest,
-            min_filter: FilterMode::Nearest,
-            mipmap_filter: FilterMode::Nearest,
-            ..Default::default()
-        });
 
-        let compute_uniform_buffer = render_device.create_buffer(&BufferDescriptor {
-            label: None,
-            usage: BufferUsages::UNIFORM | BufferUsages::COPY_DST,
-            size: EnvShaderUniform::std140_size_static() as u64,
-            mapped_at_creation: false,
-        });
-
-        let compute_uniform_bind_group = render_device.create_bind_group(&BindGroupDescriptor {
-            label: None,
-            layout: &compute_uniform_bg_layout,
-            entries: &[BindGroupEntry {
-                binding: 0,
-                resource: compute_uniform_buffer.as_entire_binding(),
-            }],
-        });
-
-        let render_bind_group = render_device.create_bind_group(&BindGroupDescriptor {
-            label: None,
-            layout: &render_bind_group_layout,
-            entries: &[
-                BindGroupEntry {
-                    binding: 0,
-                    resource: BindingResource::TextureView(&texture_view0),
-                },
-                BindGroupEntry {
-                    binding: 1,
-                    resource: BindingResource::Sampler(&sampler),
-                },
-            ],
-        });
-
-        EnvRenderPipeline {
-            size,
-            start_time: Instant::now(),
+        EnvRenderPipelineLayout {
             compute_pipeline,
-            compute_bind_group,
-            compute_uniform_bind_group,
             render_pipeline,
-            render_bind_group,
-            prev_camera_uniform: None,
-            compute_uniform_buffer,
+            compute_bg_layout,
+            compute_uniform_bg_layout,
+            render_bg_layout,
+            start_time: Instant::now(),
+            svt: svt_buffer,
         }
     }
 }
@@ -299,9 +213,10 @@ impl Plugin for EnvRenderPlugin {
         app.add_startup_system(setup);
         let render_app = app.sub_app_mut(RenderApp);
         render_app
+            .init_resource::<EnvRenderPipelineLayout>()
             .init_resource::<EnvRenderPipeline>()
             .add_system_to_stage(RenderStage::Extract, extract_phase)
-            .add_system_to_stage(RenderStage::Prepare, prepare_phase);
+            .add_system_to_stage(RenderStage::Queue, queue_phase);
 
         let render_node = EnvRenderNode::new(&mut render_app.world);
         let mut render_graph = render_app.world.get_resource_mut::<RenderGraph>().unwrap();
@@ -334,39 +249,146 @@ fn extract_phase(mut commands: Commands, obj: Res<EnvRenderObject>) {
     commands.insert_resource(obj.clone());
 }
 
-fn prepare_phase(mut pipeline: ResMut<EnvRenderPipeline>, view: Query<&ExtractedView>, queue: Res<RenderQueue>) {
-    let extracted_view = view.iter().next().unwrap();
-    let cur_transform = extracted_view.transform;
-    let cur_projection = extracted_view.projection;
-    let mut frame_index= 0;
-    if let Some((prev_position, prev_projection, frame_count)) = pipeline.prev_camera_uniform {
-        if prev_position != cur_transform || prev_projection != cur_projection {
-            frame_index = 0;
-        } else {
-            frame_index = frame_count;
-        }
-    }
-    pipeline.prev_camera_uniform = Some((cur_transform, cur_projection, frame_index + 1));
-
-    let cur_matrix = cur_transform.compute_matrix();
-    let inverse_projection = cur_projection.inverse();
+fn create_compute_uniform_bg(
+    device: &Device,
+    layout: &EnvRenderPipelineLayout,
+    camera_prop: CameraProp,
+    size: UVec2,
+    frame_index: u32,
+) -> BindGroup {
+    let transform = camera_prop.0.compute_matrix();
+    let inverse_projection = camera_prop.1.inverse();
     let mut top_left = inverse_projection * vec4(-1.0, 1.0, -1.0, 1.0);
     let bottom_right = inverse_projection * vec4(1.0, -1.0, -1.0, 1.0);
-    let mut camera_h = (bottom_right - top_left) / (pipeline.size.x as f32);
+    let mut camera_h = (bottom_right - top_left) / (size.x as f32);
     camera_h.y = 0.0;
-    let mut camera_v = (bottom_right - top_left) / (pipeline.size.y as f32);
+    let mut camera_v = (bottom_right - top_left) / (size.y as f32);
     camera_v.x = 0.0;
     top_left.w = 0.0;
     let uniform = EnvShaderUniform {
-        camera_pos: cur_transform.translation,
-        camera_look: (cur_matrix * top_left).truncate(),
-        camera_h: (cur_matrix * camera_h).truncate(),
-        camera_v: (cur_matrix * camera_v).truncate(),
-        size: pipeline.size,
-        time: pipeline.start_time.elapsed().as_micros() as f32 * 1e-6,
+        size,
+        camera_pos: camera_prop.0.translation,
+        camera_look: (transform * top_left).truncate(),
+        camera_h: (transform * camera_h).truncate(),
+        camera_v: (transform * camera_v).truncate(),
+        time: layout.start_time.elapsed().as_micros() as f32 * 1e-6,
         frame_index,
     };
-    queue.write_buffer(&pipeline.compute_uniform_buffer, 0, uniform.as_std140().as_bytes());
+    let compute_uniform_buffer = device.create_buffer_init(&BufferInitDescriptor {
+        label: None,
+        usage: BufferUsages::UNIFORM | BufferUsages::COPY_DST,
+        contents: uniform.as_std140().as_bytes(),
+    });
+
+    device.create_bind_group(&BindGroupDescriptor {
+        label: None,
+        layout: &layout.compute_uniform_bg_layout,
+        entries: &[BindGroupEntry {
+            binding: 0,
+            resource: compute_uniform_buffer.as_entire_binding(),
+        }],
+    })
+}
+
+fn create_texture_bg(device: &Device, layout: &EnvRenderPipelineLayout, size: UVec2) -> (BindGroup, BindGroup) {
+    let tex_desc = TextureDescriptor {
+        label: None,
+        size: Extent3d {
+            width: size.x,
+            height: size.y,
+            depth_or_array_layers: 1,
+        },
+        mip_level_count: 1,
+        sample_count: 1,
+        dimension: TextureDimension::D2,
+        format: TEXTURE_FORMAT,
+        usage: TextureUsages::COPY_DST
+            | TextureUsages::STORAGE_BINDING
+            | TextureUsages::TEXTURE_BINDING,
+    };
+    let tex_view_desc = TextureViewDescriptor {
+        aspect: TextureAspect::All,
+        base_mip_level: 0,
+        mip_level_count: None,
+        base_array_layer: 0,
+        array_layer_count: None,
+        ..Default::default()
+    };
+    let texture0 = device.create_texture(&tex_desc);
+    let texture1 = device.create_texture(&tex_desc);
+    let texture_view0 = texture0.create_view(&tex_view_desc);
+    let texture_view1 = texture1.create_view(&tex_view_desc);
+
+    let compute_bind_group = device.create_bind_group(&BindGroupDescriptor {
+        label: None,
+        layout: &layout.compute_bg_layout,
+        entries: &[
+            BindGroupEntry {
+                binding: 0,
+                resource: BindingResource::TextureView(&texture_view0),
+            },
+            BindGroupEntry {
+                binding: 1,
+                resource: BindingResource::TextureView(&texture_view1),
+            },
+            BindGroupEntry {
+                binding: 2,
+                resource: layout.svt.as_entire_binding(),
+            },
+        ],
+    });
+    let sampler = device.create_sampler(&SamplerDescriptor {
+        address_mode_u: AddressMode::ClampToEdge,
+        address_mode_v: AddressMode::ClampToEdge,
+        address_mode_w: AddressMode::ClampToEdge,
+        mag_filter: FilterMode::Nearest,
+        min_filter: FilterMode::Nearest,
+        mipmap_filter: FilterMode::Nearest,
+        ..Default::default()
+    });
+
+    let render_bind_group = device.create_bind_group(&BindGroupDescriptor {
+        label: None,
+        layout: &layout.render_bg_layout,
+        entries: &[
+            BindGroupEntry {
+                binding: 0,
+                resource: BindingResource::TextureView(&texture_view0),
+            },
+            BindGroupEntry {
+                binding: 1,
+                resource: BindingResource::Sampler(&sampler),
+            },
+        ],
+    });
+    (compute_bind_group, render_bind_group)
+}
+
+fn queue_phase(
+    mut queue: ResMut<RenderQueue>,
+    device: Res<RenderDevice>,
+    pipeline_layout: Res<EnvRenderPipelineLayout>,
+    mut pipeline: ResMut<EnvRenderPipeline>,
+    view: Query<(&ExtractedView, &ViewTarget)>,
+) {
+    let device = device.wgpu_device();
+    let (extracted_view, view_target) = view.iter().next().unwrap();
+    let size = view_target.size;
+    let transform = extracted_view.transform;
+    let projection = extracted_view.projection;
+    let frame_index = if pipeline.camera_prop.0 == transform && pipeline.camera_prop.1 == projection  { pipeline.camera_prop.2 + 1 } else { 0 };
+    let camera_prop = (transform, projection, frame_index);
+    pipeline.camera_prop = camera_prop;
+    let compute_uniform_bg: BindGroup =
+        create_compute_uniform_bg(device, &pipeline_layout, camera_prop, size, frame_index);
+    pipeline.compute_uniform_bg = Some(compute_uniform_bg);
+    
+    if size != pipeline.size {
+        let (compute_bg, render_bg) = create_texture_bg(device, &pipeline_layout, size);
+        pipeline.size = size;
+        pipeline.compute_bg = Some(compute_bg);
+        pipeline.render_bg = Some(render_bg);
+    };
 }
 
 struct EnvRenderNode {
@@ -403,15 +425,16 @@ impl render_graph::Node for EnvRenderNode {
             Ok(query) => query,
             Err(_) => return Ok(()), // No window
         };
+        let pipeline_layout = world.get_resource::<EnvRenderPipelineLayout>().unwrap();
         let pipeline = world.get_resource::<EnvRenderPipeline>().unwrap();
 
         {
             let mut compute_pass = render_context
                 .command_encoder
                 .begin_compute_pass(&ComputePassDescriptor::default());
-            compute_pass.set_pipeline(&pipeline.compute_pipeline);
-            compute_pass.set_bind_group(0, &pipeline.compute_uniform_bind_group, &[]);
-            compute_pass.set_bind_group(1, &pipeline.compute_bind_group, &[]);
+            compute_pass.set_pipeline(&pipeline_layout.compute_pipeline);
+            compute_pass.set_bind_group(0, pipeline.compute_uniform_bg.as_ref().unwrap(), &[]);
+            compute_pass.set_bind_group(1, pipeline.compute_bg.as_ref().unwrap(), &[]);
             compute_pass.dispatch(
                 (pipeline.size.x + WORKGROUP_SIZE - 1) / WORKGROUP_SIZE,
                 (pipeline.size.y + WORKGROUP_SIZE - 1) / WORKGROUP_SIZE,
@@ -430,8 +453,8 @@ impl render_graph::Node for EnvRenderNode {
                         })],
                         depth_stencil_attachment: None,
                     });
-            render_pass.set_pipeline(&pipeline.render_pipeline);
-            render_pass.set_bind_group(0, &pipeline.render_bind_group, &[]);
+            render_pass.set_pipeline(&pipeline_layout.render_pipeline);
+            render_pass.set_bind_group(0, pipeline.render_bg.as_ref().unwrap(), &[]);
             render_pass.draw(0..3, 0..2);
         }
         Ok(())

@@ -79,7 +79,7 @@ pub fn compute(
     #[spirv(storage_buffer, descriptor_set = 1, binding = 2)] svt: &[usvt],
     #[spirv(global_invocation_id)] global_ix: UVec3,
 ) {
-    let size = uniform.size;
+    let size: UVec2 = uniform.size;
     let mut frag_coord = vec2(global_ix.x as f32, global_ix.y as f32);
     let seed = frag_coord.xy() + uniform.time;
     let mut rng = SRng { seed };

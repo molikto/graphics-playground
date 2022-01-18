@@ -56,8 +56,10 @@ fn main() {
             ..Default::default()
         })
         .insert_resource(bevy_common::camera::CameraSetupParameter {
-            position: Vec3::new(215.0, 394.0, 27.0),
-            look_at: Vec3::new(215.0, 374.0, 100.0),
+            // position: Vec3::new(215.0, 394.0, 27.0),
+            // look_at: Vec3::new(215.0, 374.0, 100.0),
+            position: Vec3::new(27.0,394.0,  215.0),
+            look_at: Vec3::new( 100.0,374.0,  215.0),
         })
 
         .add_plugin(voxel_render_compute::EnvRenderPlugin)

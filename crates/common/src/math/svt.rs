@@ -287,10 +287,53 @@ impl<REF: Deref<Target = [usvt]>, const BLOCK_DIM: usvt, const LEVEL_COUNT: usiz
                 cur = 0;
             }
         }
+        let t_corner = t_coef * (pos + scale_exp2) - t_bias;
+
+        let mut norm = if t_corner.x > t_corner.y && t_corner.x > t_corner.z {
+            vec3(-1.0, 0.0, 0.0)
+        } else {
+            if t_corner.y > t_corner.z {
+                vec3(0.0, -1.0, 0.0)
+            } else {
+                vec3(0.0, 0.0, -1.0)
+            }
+        };
+        if (oct_mask & 1u32) == 0u32 {
+            norm.x = -norm.x;
+        }
+        if (oct_mask & 2u32) == 0u32 {
+            norm.y = -norm.y;
+        }
+        if (oct_mask & 4u32) == 0u32 {
+            norm.z = -norm.z;
+        }
+
+        // Undo mirroring of the coordinate system.
+        if (oct_mask & 1u32) != 0u32 {
+            pos.x = 3.0 - scale_exp2 - pos.x;
+        }
+        if (oct_mask & 2u32) != 0u32 {
+            pos.y = 3.0 - scale_exp2 - pos.y;
+        }
+        if (oct_mask & 4u32) != 0u32 {
+            pos.z = 3.0 - scale_exp2 - pos.z;
+        }
+
+        // Output results.
+        // o_pos = (o + t_min * d).max(pos).min(scale_exp2);
+        // if (norm.x != 0)
+        //     o_pos.x = norm.x > 0 ? pos.x + scale_exp2 + EPS * 2 : pos.x - EPS;
+        // if (norm.y != 0)
+        //     o_pos.y = norm.y > 0 ? pos.y + scale_exp2 + EPS * 2 : pos.y - EPS;
+        // if (norm.z != 0)
+        //     o_pos.z = norm.z > 0 ? pos.z + scale_exp2 + EPS * 2 : pos.z - EPS;
         closure(
-            BlockRayIntersectionInfo { mask: pos, t: 0.0 },
-            BlockRayIntersectionInfo { mask: pos, t: 0.0 },
-            BlockInfo { level: 0, data: 1 },
+            BlockRayIntersectionInfo { mask: norm, t: t_min },
+            BlockRayIntersectionInfo { mask: norm, t: 0.0 },
+            BlockInfo {
+                level: 0,
+                data: cur,
+            },
         );
         iter
     }
@@ -304,9 +347,9 @@ impl<REF: Deref<Target = [usvt]>, const BLOCK_DIM: usvt, const LEVEL_COUNT: usiz
             BlockInfo<BLOCK_DIM, LEVEL_COUNT>,
         ) -> bool,
     {
-        if BLOCK_DIM == 2 {
-            return self.traverse_ray_oct(max_count, ray, closure);
-        }
+        // if BLOCK_DIM == 2 {
+        //     return self.traverse_ray_oct(max_count, ray, closure);
+        // }
         let mut count: u32 = 0;
         // TODO there are still cases where it infinite loop..
         // the max dim we can have is 8^8, otherwise it will not work because of floating point issue
@@ -323,20 +366,20 @@ impl<REF: Deref<Target = [usvt]>, const BLOCK_DIM: usvt, const LEVEL_COUNT: usiz
         let mut mask: Vec3;
         let mut position: Vec3;
 
-        // use crate::Aabb3;
-        // let aabb = Aabb3::new(Vec3::ZERO, Vec3::splat(Self::TOTAL_DIM as f32));
-        // if aabb.inside(ray.pos) {
-        mask = Vec3::ZERO;
-        position = ray.pos;
-        // } else {
-        //     let hit = aabb.hit(&ray, 0.0, 100000000000.0);
-        //     if hit.is_hit {
-        //         mask = hit.nor;
-        //         position = ray.at(hit.t + 0.0001);
-        //     } else {
-        //         return 0;
-        //     }
-        // }
+        use crate::Aabb3;
+        let aabb = Aabb3::new(Vec3::ZERO, Vec3::splat(Self::TOTAL_DIM as f32));
+        if aabb.inside(ray.pos) {
+            mask = Vec3::ZERO;
+            position = ray.pos;
+        } else {
+            let hit = aabb.hit(&ray, 0.0, 100000000000.0);
+            if hit.is_hit {
+                mask = hit.nor;
+                position = ray.at(hit.t + 0.0001);
+            } else {
+                return 0;
+            }
+        }
         let mut t = 0 as f32;
         let mut block_indexs = [0usize; LEVEL_COUNT];
         block_indexs[0] = self.root_block_index() * (Self::BLOCK_SIZE as usize);

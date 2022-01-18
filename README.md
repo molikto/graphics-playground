@@ -14,9 +14,7 @@ run with `cargo run -p bosky --release`
         * performance
             * [X] compare with ESVO performance -- see [here](crates/common/SVT_PERF.md) (~5 times slower)
             * [ ] optimize it to be faster
-                * [ ] **integrate origial GLSL ESVO**
-                * [ ] **write a rust-gpu version of ESVO**
-                * [ ] **write a wgsl version of the structure see if it's me...**
+                * [ ] rust-gpu performance problem
                 * [ ] why the compute shader version is even slower?
             * [ ] beam optimization
             * [ ] redirect rays
@@ -30,7 +28,6 @@ run with `cargo run -p bosky --release`
     * [ ] more physics based materials?
 * renderer (in `bosky`)
     * [X] progressive rendering (Bevy `RenderGraph`)
-        * [ ] **resize window**
     * [ ] TAA???
     * [ ] DLSS???
     * [ ] realtime rendering hardware API
@@ -44,6 +41,11 @@ run with `cargo run -p bosky --release`
 * you cannnot do `vec[0]`, use `vec.x` instead
 * https://github.com/EmbarkStudios/rust-gpu/issues/836
 * no specialization constant
+* code generation
+    * vec is expanded
+    * vec normalize is not implemented using spirv code
+    * array initialization
+    * array bound check
 
 
 ## referneces
