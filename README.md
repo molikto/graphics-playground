@@ -14,27 +14,32 @@ run with `cargo run -p bosky --release`
         * performance
             * [X] compare with ESVO performance -- see [here](crates/common/SVT_PERF.md) (~5 times slower)
             * [ ] optimize it to be faster
-                * [ ] rust-gpu performance problem
+                * [ ] **rust-gpu performance problem**
                 * [ ] why the compute shader version is even slower?
             * [ ] beam optimization
             * [ ] redirect rays
         * API
             * [ ] load `.vox` file
-* material (in `common`)
+* shader (in `common`)
     * [X] basic material in "One Weekend"
     * [ ] glass material seems wrong??
+    * [ ] shadow rays
     * [ ] volume fog material in "Next Week"
     * [ ] `.vox` complete
     * [ ] more physics based materials?
-* renderer (in `bosky`)
-    * [X] progressive rendering (Bevy `RenderGraph`)
     * [ ] TAA???
     * [ ] DLSS???
+* voxel renderer (in `bosky`)
+    * [X] progressive rendering (Bevy `RenderGraph`)
+    * [ ] **WrldTmp style world modification supporting 1024^3 worlds**
     * [ ] realtime rendering hardware API
 * engine
     * [ ] creating RenderNode in bevy is really not a good exp, lot of code
     * [ ] shader hot reloading of rust-gpu shader in bevy
     * [ ] group everything better with switchable demo, adjustable specialized constants
+* game
+    * [ ] **basic building feature**
+    * [ ] **basic world gen**
 
 ## problems with rust-gpu
 

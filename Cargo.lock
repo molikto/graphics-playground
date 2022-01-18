@@ -880,7 +880,6 @@ version = "0.1.0"
 dependencies = [
  "bevy_crevice",
  "common",
- "glam",
  "spirv-std",
 ]
 
@@ -1741,6 +1740,7 @@ dependencies = [
  "bytemuck",
  "mint",
  "num-traits",
+ "rand 0.8.4",
  "serde",
 ]
 

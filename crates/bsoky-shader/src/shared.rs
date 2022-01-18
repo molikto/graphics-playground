@@ -6,6 +6,8 @@ use common::{*, svt::*};
 // pub const LEVEL_COUNT: usize = 10;
 pub const BLOCK_DIM: usvt = 2;
 pub const LEVEL_COUNT: usize = 8;
+// pub const BLOCK_DIM: usvt = 4;
+// pub const LEVEL_COUNT: usize = 5;
 
 pub type MySvt<'a>  = Svt<&'a [usvt], BLOCK_DIM, LEVEL_COUNT>;
 
@@ -26,12 +28,12 @@ pub fn from_simulation_coor(v: Vec3) -> Vec3 {
 
 // TODO change order of things in this will make it dont work???!!!
 #[cfg_attr(not(target_arch = "spirv"), derive(bevy_crevice::std430::AsStd430, bevy_crevice::std140::AsStd140, Debug))]
-pub struct EnvShaderUniform {
+pub struct VoxelMapRenderUniform {
     pub camera_pos: Vec3,
     pub camera_look: Vec3,
     pub camera_h: Vec3,
     pub camera_v: Vec3,
-    pub size: UVec2,
+    pub size: UVec2, // ideally ViewTarget info
     pub time: f32,
     pub frame_index: u32,
 }

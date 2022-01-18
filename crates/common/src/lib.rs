@@ -8,7 +8,6 @@ pub use lang::*;
 pub mod math;
 pub use math::*;
 pub mod graphics;
-pub use graphics::*;
 pub mod shader;
 
 

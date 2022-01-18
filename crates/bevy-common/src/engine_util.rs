@@ -1,5 +1,4 @@
 use bevy::{
-    core::Name,
     math::Vec3,
     pbr::{PbrBundle, StandardMaterial},
     prelude::{AssetServer, Assets, Commands, ResMut, Transform, Color},

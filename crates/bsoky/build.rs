@@ -6,7 +6,7 @@ fn cwd() -> PathBuf {
 }
 
 fn shader_folder() -> PathBuf {
-    let path_ext = cwd().join("assets").join("env");
+    let path_ext = cwd().join("assets").join("voxel_render");
     return path_ext;
 }
 

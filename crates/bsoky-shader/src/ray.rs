@@ -1,8 +1,8 @@
 use super::shared::*;
 use common::{
-    material::*,
-    svt::{usvt, BlockRayIntersectionInfo},
-    *, shader::heat,
+    math::*,
+    svt::*,
+    shader::heat, graphics::{*, material::*}
 };
 
 #[derive(PartialEq, Eq)]
@@ -20,7 +20,7 @@ const MAX_RAY_DEPTH: u32 = 5;
 pub const MAX_ITERATION: u32 = 256;
 pub const MAX_HEAT_ITERATION: u32 = 128;
 
-// from Ray Tracing in One Weekend
+// from https://raytracing.github.io/
 pub fn skybox0(ray: &Ray3) -> Vec3 {
     let unit = ray.dir;
     let t = 0.5 * (unit.y + 1.0) as f32;
@@ -73,7 +73,7 @@ pub fn shade_ray(rng: &mut SRng, svt: MySvt, mut current_ray: Ray3) -> Vec3 {
                         from_outside: true,
                         nor: -final_in_info.mask,
                     };
-                    let mut interaction: MaterialInteraction;
+                    let interaction: MaterialInteraction;
                     if material_index == 1 {
                         interaction = material1.scatter(rng, current_ray, hit_record);
                     } else if material_index == 2 {

@@ -6,14 +6,67 @@ pub type SvtMut<const BLOCK_DIM: usvt, const LEVEL_COUNT: usize> =
 
 use rand::Rng;
 
+impl<const BLOCK_DIM: usvt, const LEVEL_COUNT: usize> Clone for SvtMut<BLOCK_DIM, LEVEL_COUNT> {
+    fn clone(&self) -> Self {
+        Self {
+            mem: self.mem.clone(),
+        }
+    }
+}
+
 impl<const BLOCK_DIM: usvt, const LEVEL_COUNT: usize> Svt<Vec<usvt>, BLOCK_DIM, LEVEL_COUNT> {
-    pub fn init(material: usvt) -> Self {
+    pub fn new(material: usvt) -> Self {
         let mem = vec![0; (Self::BLOCK_SIZE as usize) * 10];
         let mut svt = Svt { mem };
         // the root pointer is 1, here nothing is allocated, so we set it to 1
         svt.mem[0] = svt.root_block_index() as usvt;
         svt.alloc_new_block(material);
         return svt;
+    }
+
+    #[inline]
+    fn sample_single<C>(&mut self, closure: &C, level_cap: u32, level_size: u32, level_pos: Usvt3)
+    where
+        C: Fn(UVec3) -> usvt,
+    {
+        let material = closure(level_pos);
+        for i in 0..level_size {
+            for j in 0..level_size {
+                for k in 0..level_size {
+                    let v = level_pos + uvec3(i, j, k);
+                    let new_material= closure(v);
+                    if new_material != material {
+                        return;
+                    }
+                }
+            }
+        }
+        self.set_with_level_cap(
+            level_cap,
+            level_pos,
+            material,
+        );
+    }
+
+    // TODO make near by blocks nearby in memory
+    #[inline]
+    pub fn sample<C>(&mut self, closure: &C)
+    where
+        C: Fn(UVec3) -> usvt,
+    {
+        for level in 0..LEVEL_COUNT as usvt {
+            let level_cap = level + 1;
+            let level_dim = BLOCK_DIM.pow(level_cap as u32);
+            let level_size = BLOCK_DIM.pow(LEVEL_COUNT as u32 - (level_cap as u32));
+            for x in 0..level_dim {
+                for y in 0..level_dim {
+                    for z in 0..level_dim {
+                        let level_pos = uvec3(x, y, z) * level_size;
+                        self.sample_single(closure, level_cap, level_size, level_pos);
+                    }
+                }
+            }
+        }
     }
 
     pub fn block_count(&self) -> usize {
@@ -51,7 +104,6 @@ impl<const BLOCK_DIM: usvt, const LEVEL_COUNT: usize> Svt<Vec<usvt>, BLOCK_DIM, 
     // }
 
     // fn remove_blocks_at_index(&mut self, index: usize) {
-    //     // TODO remove unused blocks
     // }
 
     fn alloc_new_block(&mut self, material: usvt) -> usvt {
@@ -122,9 +174,7 @@ impl<const BLOCK_DIM: usvt, const LEVEL_COUNT: usize> Svt<Vec<usvt>, BLOCK_DIM, 
     }
 
     #[cfg(feature = "svo-vox")]
-    pub fn load_from_vox(
-        path: &Path,
-    ) -> (SvtMut<BLOCK_DIM, LEVEL_COUNT>, Vec<Material>) {
+    pub fn load_from_vox(path: &Path) -> (SvtMut<BLOCK_DIM, LEVEL_COUNT>, Vec<Material>) {
         let mut svt: SvtMut<BLOCK_DIM, LEVEL_COUNT> = Svt::init(0);
         let data = dot_vox::load(path.to_str().unwrap()).unwrap();
         let mut materials: Vec<Material> = Vec::new();
@@ -139,11 +189,7 @@ impl<const BLOCK_DIM: usvt, const LEVEL_COUNT: usize> Svt<Vec<usvt>, BLOCK_DIM, 
         (svt, materials)
     }
 
-    fn set_from_rsvo(
-        &mut self,
-        level: usize,
-        position: Usvt3,
-    ) {
+    fn set_from_rsvo(&mut self, level: usize, position: Usvt3) {
         let material = rand::thread_rng().gen_range(1..4);
         if BLOCK_DIM == 2 {
             self.set_with_level_cap(level as usvt, position, material);
@@ -253,14 +299,15 @@ impl<const BLOCK_DIM: usvt, const LEVEL_COUNT: usize> Svt<Vec<usvt>, BLOCK_DIM, 
         }
     }
 
-    pub fn load_from_rsvo(
-        rsvo: &[u8],
-        max_pow_2_level: usize,
-    ) -> Self {
+    pub fn println_debug(&self) {
+        println!("total dim {}\nblock count {}\nmemory used {}\nmemory ratio {}", Self::TOTAL_DIM, self.block_count(), self.memory_used(), self.memory_ratio());
+    }
+
+    pub fn load_from_rsvo(rsvo: &[u8], max_pow_2_level: usize) -> Self {
         if BLOCK_DIM != 2 && BLOCK_DIM != 4 && BLOCK_DIM != 8 {
             panic!();
         }
-        let mut svt: Self = Svt::init(0);
+        let mut svt: Self = Svt::new(0);
         // TODO fix this transmute
         let rsvo32 = unsafe { std::mem::transmute::<&[u8], &[u32]>(rsvo) };
         let level_max = if BLOCK_DIM == 2 {
@@ -308,7 +355,7 @@ mod tests {
     fn simple_image_render() {
         const BLOCK_DIM: usvt = 2;
         const LEVEL: usize = 2;
-        let mut svt = Svt::<Vec<usvt>, BLOCK_DIM, LEVEL>::init(0);
+        let mut svt = Svt::<Vec<usvt>, BLOCK_DIM, LEVEL>::new(0);
         let total = BLOCK_DIM.pow(LEVEL as u32);
         // svt.set(Usvt3(0, 0, 0), 1);
         svt.set(Usvt3::new(0, 2, 1), 2);
@@ -348,7 +395,7 @@ mod tests {
 
     #[test]
     fn simple_debug() {
-        let mut svt = MySvt::init(0);
+        let mut svt = MySvt::new(0);
         let size = (MySvt::TOTAL_DIM - 10) as f32;
         let mut rng = rand::thread_rng();
         for i in 0..1000 {
@@ -397,46 +444,17 @@ mod tests {
             )
             .subtract(sdfu::Box::new(Vec3A::new(0.2, 2.0, 0.2)))
             .translate(Vec3A::new(0.5, 0.5, 0.5));
-        let mut svt = Svt::<Vec<usvt>, 4, 4>::init(0);
+        let mut svt = Svt::<Vec<usvt>, 4, 4>::new(0);
         let level_count = 4 as usvt;
         let block_size = 4 as usvt;
         let total_size = block_size.pow(level_count as u32) as f32;
-        for level in 0..level_count {
-            let level_cap = level + 1;
-            let level_dim = block_size.pow(level_cap as u32);
-            let level_size = block_size.pow((level_count - level_cap) as u32);
-            for x in 0..level_dim {
-                for y in 0..level_dim {
-                    for z in 0..level_dim {
-                        let mut count = 0;
-                        for i in 0..level_size {
-                            for j in 0..level_size {
-                                for k in 0..level_size {
-                                    let v = Vec3A::new(
-                                        (x * level_size + i) as f32,
-                                        (y * level_size + j) as f32,
-                                        (z * level_size + k) as f32,
-                                    ) / total_size;
-                                    if sdf.dist(v) < 0.0 {
-                                        count += 1;
-                                    }
-                                }
-                            }
-                        }
-                        let material = if count > level_size * level_size * level_size / 2 {
-                            1
-                        } else {
-                            0
-                        };
-                        svt.set_with_level_cap(
-                            level_cap,
-                            Usvt3::new(x * level_size, y * level_size, z * level_size),
-                            material,
-                        );
-                    }
-                }
+        svt.sample(&|v| {
+            if sdf.dist(v.as_vec3a() / total_size) < 0.0 {
+                1
+            } else {
+                0
             }
-        }
+        });
         let mut image: RgbImage = ImageBuffer::new(100, 100);
         for i in 0..100 {
             for j in 0..100 {

@@ -8,8 +8,8 @@ use bevy::{
     render::{
         render_asset::{PrepareAssetError, RenderAsset},
         render_resource::*,
-        renderer::RenderDevice, render_phase::TrackedRenderPass,
-    }, utils::Instant,
+        renderer::RenderDevice,
+    },
 };
 use bevy_common::RevertBox;
 use bsoky_shader::*;
@@ -73,10 +73,10 @@ impl RenderAsset for CustomMaterial {
 
 impl Material for CustomMaterial {
     fn vertex_shader(asset_server: &AssetServer) -> Option<Handle<Shader>> {
-        Some(asset_server.load(Path::new("env").join("shader.spv")))
+        Some(asset_server.load(Path::new("voxel_render").join("shader.spv")))
     }
     fn fragment_shader(asset_server: &AssetServer) -> Option<Handle<Shader>> {
-        Some(asset_server.load(Path::new("env").join("shader.spv")))
+        Some(asset_server.load(Path::new("voxel_render").join("shader.spv")))
     }
 
     fn bind_group(render_asset: &<Self as RenderAsset>::PreparedAsset) -> &BindGroup {
@@ -103,9 +103,9 @@ impl Material for CustomMaterial {
 }
 
 
-pub struct EnvRenderPlugin;
+pub struct VoxelMapRenderPlugin;
 
-impl Plugin for EnvRenderPlugin {
+impl Plugin for VoxelMapRenderPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugin(MaterialPlugin::<CustomMaterial>::default())
         .add_startup_system(create_simple_debug_objects);
@@ -117,8 +117,7 @@ fn create_simple_debug_objects(
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<CustomMaterial>>,
 ) {
-    let svt = super::create_svt::debug_create_rsvo();
-    println!("total dim {}\nblock count {}\nmemory used {}\nmemory ratio {}", MySvtMut::TOTAL_DIM, svt.block_count(), svt.memory_used(), svt.memory_ratio());
+    let svt = crate::debug_create_svt::debug_create_rsvo();
     let mesh = meshes.add(RevertBox::zero_with_size(Vec3::splat(MySvtMut::TOTAL_DIM as f32)).into());
     let material = materials.add(CustomMaterial { svt });
     commands.spawn_bundle(MaterialMeshBundle::<CustomMaterial> {

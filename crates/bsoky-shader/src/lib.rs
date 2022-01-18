@@ -43,7 +43,7 @@ pub fn vertex(
 pub fn fragment(
     #[spirv(frag_coord)] in_frag_coord: Vec4,
     #[spirv(uniform, descriptor_set = 0, binding = 0)] view: &ViewUniform,
-    #[spirv(storage_buffer, descriptor_set = 1, binding = 0)] svt: &[usvt],
+    #[spirv(storage_buffer, descriptor_set = 1, binding = 0)] map_data: &[usvt],
     #[spirv(flat)] face: u32,
     uv: Vec2,
     output: &mut Vec4,
@@ -65,18 +65,17 @@ pub fn fragment(
         dir: to_simulation_coor(frag_world_position - view.world_position).normalize_or_zero(),
     };
 
-    let svt = MySvt { mem: svt };
-    let env_color = ray::shade_ray(&mut rng, svt, ray);
+    let map_data = MySvt { mem: map_data };
+    let voxel_color = ray::shade_ray(&mut rng, map_data, ray);
 
-    *output = env_color.extend(1.0);
+    *output = voxel_color.extend(1.0);
 }
 
 #[spirv(compute(threads(8, 8)))]
 pub fn compute(
-    #[spirv(uniform, descriptor_set = 0, binding = 0)] uniform: &EnvShaderUniform,
-    #[spirv(descriptor_set = 1, binding = 0)] src_tex: &Image!(2D, format=rgba32f, sampled=false),
-    #[spirv(descriptor_set = 1, binding = 1)] _desc_tex: &Image!(2D, format=rgba32f, sampled=false),
-    #[spirv(storage_buffer, descriptor_set = 1, binding = 2)] svt: &[usvt],
+    #[spirv(descriptor_set = 0, binding = 0)] view_target: &Image!(2D, format=rgba32f, sampled=false),
+    #[spirv(uniform, descriptor_set = 1, binding = 0)] uniform: &VoxelMapRenderUniform,
+    #[spirv(storage_buffer, descriptor_set = 2, binding = 0)] map_data: &[usvt],
     #[spirv(global_invocation_id)] global_ix: UVec3,
 ) {
     let size: UVec2 = uniform.size;
@@ -89,16 +88,16 @@ pub fn compute(
     let dir = uniform.camera_look + frag_coord.x * uniform.camera_h + frag_coord.y * uniform.camera_v;
     let ray = Ray3 { pos, dir };
 
-    let svt = MySvt { mem: svt };
-    let env_color = ray::shade_ray(&mut rng, svt, ray);
+    let map_data = MySvt { mem: map_data };
+    let voxel_color = ray::shade_ray(&mut rng, map_data, ray);
 
     let tex_coor = global_ix.truncate().as_ivec2();
-    let prev_color: Vec4 = src_tex.read(tex_coor);
+    let prev_color: Vec4 = view_target.read(tex_coor);
     let frame_index = uniform.frame_index as f32;
-    let frag_color = (frame_index * prev_color.truncate() + env_color) / (frame_index + 1.0);
+    let frag_color = (frame_index * prev_color.truncate() + voxel_color) / (frame_index + 1.0);
     let frag_color = frag_color.extend(1.0);
     if global_ix.x < size.x && global_ix.y < size.y {
-        unsafe { src_tex.write(tex_coor, frag_color) }
+        unsafe { view_target.write(tex_coor, frag_color) }
     }
 }
 

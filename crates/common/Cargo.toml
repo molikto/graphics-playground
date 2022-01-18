@@ -12,7 +12,7 @@ num-traits = { version = "0.2.14", default-features = false, features = ["libm"]
 
 
 [target.'cfg(not(target_arch = "spirv"))'.dependencies]
-glam = { version = "0.20", features = ["bytemuck"] }
+glam = { version = "0.20", features = ["bytemuck", "rand"] }
 bevy_crevice = { version = "0.6.0", features=["glam" ] }
 num-traits = { version = "0.2.14" }
 rand = "0.8.4"

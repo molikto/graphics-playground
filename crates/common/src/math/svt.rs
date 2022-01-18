@@ -43,7 +43,6 @@ impl<REF: Deref<Target = [usvt]>, const BLOCK_DIM: usvt, const LEVEL_COUNT: usiz
     pub const BLOCK_SIZE: usvt = BLOCK_DIM * BLOCK_DIM * BLOCK_DIM;
     pub const TOTAL_DIM: usvt = BLOCK_DIM.pow(LEVEL_COUNT as usvt);
 
-    // TODO memory allocation
     pub fn root_block_index(&self) -> usize {
         return 0;
     }
@@ -257,28 +256,28 @@ impl<REF: Deref<Target = [usvt]>, const BLOCK_DIM: usvt, const LEVEL_COUNT: usiz
                 // Find the highest differing bit between the two positions.
                 let mut differing_bits = 0u32;
                 if (step_mask & 1) != 0 {
-                    differing_bits |= floatBitsToUint(pos.x) ^ floatBitsToUint(pos.x + scale_exp2);
+                    differing_bits |= float_bits_to_uint(pos.x) ^ float_bits_to_uint(pos.x + scale_exp2);
                 }
                 if (step_mask & 2) != 0 {
-                    differing_bits |= floatBitsToUint(pos.y) ^ floatBitsToUint(pos.y + scale_exp2);
+                    differing_bits |= float_bits_to_uint(pos.y) ^ float_bits_to_uint(pos.y + scale_exp2);
                 }
                 if (step_mask & 4) != 0 {
-                    differing_bits |= floatBitsToUint(pos.z) ^ floatBitsToUint(pos.z + scale_exp2);
+                    differing_bits |= float_bits_to_uint(pos.z) ^ float_bits_to_uint(pos.z + scale_exp2);
                 }
-                scale = findMSB(differing_bits);
-                scale_exp2 = uintBitsToFloat(((scale - STACK_SIZE + 127usize) as u32) << 23u32); // exp2f(scale - s_max)
+                scale = find_msb(differing_bits);
+                scale_exp2 = uint_bits_to_float(((scale - STACK_SIZE + 127usize) as u32) << 23u32); // exp2f(scale - s_max)
 
                 // Restore parent voxel from the stack.
                 parent = stack_node[scale];
                 t_max = stack_t_max[scale];
 
                 // Round cube position and extract child slot index.
-                let shx = floatBitsToUint(pos.x) >> scale;
-                let shy = floatBitsToUint(pos.y) >> scale;
-                let shz = floatBitsToUint(pos.z) >> scale;
-                pos.x = uintBitsToFloat(shx << scale);
-                pos.y = uintBitsToFloat(shy << scale);
-                pos.z = uintBitsToFloat(shz << scale);
+                let shx = float_bits_to_uint(pos.x) >> scale;
+                let shy = float_bits_to_uint(pos.y) >> scale;
+                let shz = float_bits_to_uint(pos.z) >> scale;
+                pos.x = uint_bits_to_float(shx << scale);
+                pos.y = uint_bits_to_float(shy << scale);
+                pos.z = uint_bits_to_float(shz << scale);
                 idx = (shx & 1) | ((shy & 1) << 1u32) | ((shz & 1) << 2u32);
 
                 // Prevent same parent from being stored again and invalidate cached
@@ -338,6 +337,21 @@ impl<REF: Deref<Target = [usvt]>, const BLOCK_DIM: usvt, const LEVEL_COUNT: usiz
         iter
     }
 
+    pub fn traverse_ray_within(&self, ray: Ray3, max_distance: f32) -> Option<(BlockRayIntersectionInfo, BlockInfo<BLOCK_DIM, LEVEL_COUNT>)>{
+        let mut ret = None;
+        self.traverse_ray(1000, ray, |in_pos, _, block| {
+            if ray.at(in_pos.t).distance(ray.pos) > max_distance {
+                true
+            } else if block.data != 0 {
+                ret = Some((in_pos, block));
+                true
+            } else {
+                false
+            }
+        });
+        ret
+    }
+
     #[inline]
     pub fn traverse_ray<C>(&self, max_count: u32, ray: Ray3, mut closure: C) -> i32
     where
@@ -351,7 +365,6 @@ impl<REF: Deref<Target = [usvt]>, const BLOCK_DIM: usvt, const LEVEL_COUNT: usiz
         //     return self.traverse_ray_oct(max_count, ray, closure);
         // }
         let mut count: u32 = 0;
-        // TODO there are still cases where it infinite loop..
         // the max dim we can have is 8^8, otherwise it will not work because of floating point issue
         // https://itectec.com/matlab-ref/matlab-function-flintmax-largest-consecutive-integer-in-floating-point-format/
         // de_eps(&mut ray.dir);
@@ -411,9 +424,6 @@ impl<REF: Deref<Target = [usvt]>, const BLOCK_DIM: usvt, const LEVEL_COUNT: usiz
                 let ts_min = ts.x.min(ts.y).min(ts.z);
                 if Self::is_terminal_block(target_block) {
                     let incident = BlockRayIntersectionInfo { t, mask };
-                    // TODO this fixes some problem of inifinite looping
-                    // set mask later, because we want to know the mask of the enter face
-                    // t = if ts_min < t { t + 0.0001 } else { ts_min };
                     t = ts_min;
                     mask = ts.step_f(t) * ray_dir_signum;
                     if mask == Vec3::ZERO {
@@ -488,7 +498,7 @@ impl<REF: Deref<Target = [usvt]>, const BLOCK_DIM: usvt, const LEVEL_COUNT: usiz
     }
 }
 
-fn findMSB(bits: u32) -> usize {
+fn find_msb(bits: u32) -> usize {
     #[cfg(target_arch = "spirv")]
     {
         let result;
@@ -508,7 +518,7 @@ fn findMSB(bits: u32) -> usize {
     todo!()
 }
 
-fn uintBitsToFloat(bits: u32) -> f32 {
+fn uint_bits_to_float(bits: u32) -> f32 {
     #[cfg(target_arch = "spirv")]
     {
         let result;
@@ -528,7 +538,7 @@ fn uintBitsToFloat(bits: u32) -> f32 {
     }
 }
 
-fn floatBitsToUint(bits: f32) -> u32 {
+fn float_bits_to_uint(bits: f32) -> u32 {
     #[cfg(target_arch = "spirv")]
     {
         let result;

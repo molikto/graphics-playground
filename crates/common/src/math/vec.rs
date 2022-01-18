@@ -315,5 +315,3 @@ impl Rem<u16> for SUVec3 {
         }
     }
 }
-
-//// legacy code
