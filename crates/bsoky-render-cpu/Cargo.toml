@@ -1,12 +1,11 @@
 [package]
-name = "bsoky"
+name = "bsoky-render-cpu"
 version = "0.1.0"
 edition = "2021"
 
-[build-dependencies]
+[dependencies]
 spirv-builder = { git = "https://github.com/EmbarkStudios/rust-gpu/", features = [ "watch"] }
 
-[dependencies]
 rand = "0.8.4"
 rand_pcg = "0.3.1"
 variant_count = "1.1.0"
@@ -14,8 +13,7 @@ num_enum = "0.5.4"
 transmute = "0.1.1"
 num-traits = "0.2.14"
 maplit = "1.0.2"
-packed_struct = "0.10.0"
-enum-map= "1.1.1"
+enum-map= "2.0.0"
 derive_more = "0.99.16"
 lazy_static = "1.4.0"
 serde = "1.0.130"
@@ -27,16 +25,15 @@ ron = "0.7.0"
 log = "0.4.0"
 env_logger = "0.9"
 
-noise = "0.7"
 morton-encoding = "2.0.1"
 
-dolly = "0.1.4"
+dolly = "0.2.0"
 egui = "0.16.1"
 bevy = "0.6.0"
 bevy_crevice = { version = "0.6.0", features=["glam" ] }
 
 bevy_egui = "0.10.0"
-bevy-inspector-egui = "0.7.1"
+bevy_editor_pls = { git="https://github.com/jakobhellermann/bevy_editor_pls" }
 
 
 wgpu = { version = "*", features = ["glsl"] }
@@ -44,6 +41,7 @@ naga = "*"
 
 common = { path = "../common" }
 bevy-common = { path = "../bevy-common" }
-bsoky-shader = { path = "../bsoky-shader" }
+bsoky-common-cpu = { path = "../bsoky-common-cpu" }
+bsoky-render-cgpu = { path = "../bsoky-render-cgpu" }
 
 sdfu = { version="0.3.1-alpha.1", features=["glam"] }

@@ -5,7 +5,7 @@ my graphics playground in Rust, using:
 * https://github.com/EmbarkStudios/rust-gpu
 * https://github.com/bevyengine/bevy
 
-run with `cargo run -p bosky --release`
+run with `cargo run -p bsoky-render-cpu --release`
 
 ## done and TODOs
 
@@ -20,7 +20,8 @@ run with `cargo run -p bosky --release`
             * [ ] redirect rays
         * API
             * [ ] load `.vox` file
-* shader (in `common`)
+* shadering (in `common`)
+    * [X] textures
     * [X] basic material in "One Weekend"
     * [ ] glass material seems wrong??
     * [ ] shadow rays
@@ -29,22 +30,19 @@ run with `cargo run -p bosky --release`
     * [ ] more physics based materials?
     * [ ] TAA???
     * [ ] DLSS???
-* voxel renderer (in `bosky`)
+* voxel renderer (in `bsoky`)
     * [X] progressive rendering (Bevy `RenderGraph`)
     * [ ] **WrldTmp style world modification supporting 1024^3 worlds**
     * [ ] realtime rendering hardware API
 * engine
+    * [X] shader hot reloading of rust-gpu shader in bevy
+    * [ ] compute shader hot reloading (using include_raw is very bad)
     * [ ] creating RenderNode in bevy is really not a good exp, lot of code
-    * [ ] shader hot reloading of rust-gpu shader in bevy
     * [ ] group everything better with switchable demo, adjustable specialized constants
-* game
-    * [ ] **basic building feature**
-    * [ ] **basic world gen**
 
 ## problems with rust-gpu
 
 * you cannnot do `vec[0]`, use `vec.x` instead
-* https://github.com/EmbarkStudios/rust-gpu/issues/836
 * no specialization constant
 * code generation
     * vec is expanded

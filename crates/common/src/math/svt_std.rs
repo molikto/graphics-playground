@@ -1,23 +1,21 @@
 use super::svt::*;
 use super::vec::*;
 
-pub type SvtMut<const BLOCK_DIM: usvt, const LEVEL_COUNT: usize> =
-    Svt<Vec<usvt>, BLOCK_DIM, LEVEL_COUNT>;
+pub type SvtMut<T, const BLOCK_DIM: usvt, const LEVEL_COUNT: usize> =
+    Svt<T, Vec<usvt>, BLOCK_DIM, LEVEL_COUNT>;
 
 use rand::Rng;
 
-impl<const BLOCK_DIM: usvt, const LEVEL_COUNT: usize> Clone for SvtMut<BLOCK_DIM, LEVEL_COUNT> {
+impl<T: SvtData, const BLOCK_DIM: usvt, const LEVEL_COUNT: usize> Clone for SvtMut<T, BLOCK_DIM, LEVEL_COUNT> {
     fn clone(&self) -> Self {
-        Self {
-            mem: self.mem.clone(),
-        }
+        Self::new_wrap(self.mem.clone())
     }
 }
 
-impl<const BLOCK_DIM: usvt, const LEVEL_COUNT: usize> Svt<Vec<usvt>, BLOCK_DIM, LEVEL_COUNT> {
-    pub fn new(material: usvt) -> Self {
+impl<T: SvtData, const BLOCK_DIM: usvt, const LEVEL_COUNT: usize> Svt<T, Vec<usvt>, BLOCK_DIM, LEVEL_COUNT> {
+    pub fn new(material: T) -> Self {
         let mem = vec![0; (Self::BLOCK_SIZE as usize) * 10];
-        let mut svt = Svt { mem };
+        let mut svt = Svt::new_wrap(mem);
         // the root pointer is 1, here nothing is allocated, so we set it to 1
         svt.mem[0] = svt.root_block_index() as usvt;
         svt.alloc_new_block(material);
@@ -25,9 +23,9 @@ impl<const BLOCK_DIM: usvt, const LEVEL_COUNT: usize> Svt<Vec<usvt>, BLOCK_DIM, 
     }
 
     #[inline]
-    fn sample_single<C>(&mut self, closure: &C, level_cap: u32, level_size: u32, level_pos: Usvt3)
+    fn sample_single<C>(&mut self, closure: &mut C, level_cap: u32, level_size: u32, level_pos: Usvt3)
     where
-        C: Fn(UVec3) -> usvt,
+        C: FnMut(UVec3) -> T,
     {
         let material = closure(level_pos);
         for i in 0..level_size {
@@ -50,9 +48,9 @@ impl<const BLOCK_DIM: usvt, const LEVEL_COUNT: usize> Svt<Vec<usvt>, BLOCK_DIM, 
 
     // TODO make near by blocks nearby in memory
     #[inline]
-    pub fn sample<C>(&mut self, closure: &C)
+    pub fn sample<C>(&mut self, closure: &mut C)
     where
-        C: Fn(UVec3) -> usvt,
+        C: FnMut(UVec3) -> T,
     {
         for level in 0..LEVEL_COUNT as usvt {
             let level_cap = level + 1;
@@ -106,21 +104,21 @@ impl<const BLOCK_DIM: usvt, const LEVEL_COUNT: usize> Svt<Vec<usvt>, BLOCK_DIM, 
     // fn remove_blocks_at_index(&mut self, index: usize) {
     // }
 
-    fn alloc_new_block(&mut self, material: usvt) -> usvt {
+    fn alloc_new_block(&mut self, material: T) -> usvt {
         let cur_top = self.block_count();
         // here we need to allocate extra block, some padding issues...
         while self.mem.len() < ((cur_top + 1) as usize) * (Self::BLOCK_SIZE as usize) {
-            self.mem.push(material);
+            self.mem.push(material.into());
         }
         for i in 0..Self::BLOCK_SIZE {
             self.mem[(cur_top as usize) * (Self::BLOCK_SIZE as usize) + (i as usize)] =
-                Self::new_block(true, material);
+                Self::new_block(material);
         }
         return cur_top as usvt;
     }
 
     // the position is a "representative" position
-    pub fn set_with_level_cap(&mut self, level_cap: usvt, position: Usvt3, material: usvt) {
+    pub fn set_with_level_cap(&mut self, level_cap: usvt, position: Usvt3, material: T) {
         let mut first_block_index = self.root_block_index() * (Self::BLOCK_SIZE as usize);
         let mut level = 0;
         while level < level_cap {
@@ -128,17 +126,18 @@ impl<const BLOCK_DIM: usvt, const LEVEL_COUNT: usize> Svt<Vec<usvt>, BLOCK_DIM, 
             let target_block_index = first_block_index + Self::encode(level_position);
             let target_block = self.mem[target_block_index];
             if level == level_cap - 1 {
-                self.mem[target_block_index] = Self::new_block(true, material);
+                self.mem[target_block_index] = Self::new_block(material);
                 return;
             } else {
                 let mut index = Self::block_index_data(target_block);
                 if Self::is_terminal_block(target_block) {
-                    if index == material {
+                    let old_material: T = index.into();
+                    if old_material == material {
                         // already is that
                         return;
                     }
-                    index = self.alloc_new_block(index);
-                    self.mem[target_block_index] = Self::new_block(false, index);
+                    index = self.alloc_new_block(old_material);
+                    self.mem[target_block_index] = Self::new_leaf_block(index);
                 }
                 first_block_index = index as usize * (Self::BLOCK_SIZE as usize);
             }
@@ -147,7 +146,7 @@ impl<const BLOCK_DIM: usvt, const LEVEL_COUNT: usize> Svt<Vec<usvt>, BLOCK_DIM, 
         panic!("not allowed to be here");
     }
 
-    pub fn set(&mut self, position: Usvt3, material: usvt) {
+    pub fn set(&mut self, position: Usvt3, material: T) {
         let mut first_block_index = self.root_block_index() * (Self::BLOCK_SIZE as usize);
         let mut level = 0;
         while level < LEVEL_COUNT as usvt {
@@ -156,16 +155,17 @@ impl<const BLOCK_DIM: usvt, const LEVEL_COUNT: usize> Svt<Vec<usvt>, BLOCK_DIM, 
             let target_block = self.mem[target_block_index];
             // the last level, get the block directly
             if level == LEVEL_COUNT as usvt - 1 {
-                self.mem[target_block_index] = Self::new_block(true, material);
+                self.mem[target_block_index] = Self::new_block(material);
             } else {
                 let mut index = Self::block_index_data(target_block);
                 if Self::is_terminal_block(target_block) {
-                    if index == material {
+                    let old_material: T = index.into();
+                    if old_material == material {
                         // already is that
                         return;
                     }
-                    index = self.alloc_new_block(index);
-                    self.mem[target_block_index] = Self::new_block(false, index);
+                    index = self.alloc_new_block(old_material);
+                    self.mem[target_block_index] = Self::new_leaf_block(index);
                 }
                 first_block_index = index as usize * (Self::BLOCK_SIZE as usize);
             }
@@ -190,7 +190,7 @@ impl<const BLOCK_DIM: usvt, const LEVEL_COUNT: usize> Svt<Vec<usvt>, BLOCK_DIM, 
     }
 
     fn set_from_rsvo(&mut self, level: usize, position: Usvt3) {
-        let material = rand::thread_rng().gen_range(1..4);
+        let material: T = rand::thread_rng().gen_range(1..4).into();
         if BLOCK_DIM == 2 {
             self.set_with_level_cap(level as usvt, position, material);
         } else if BLOCK_DIM == 4 {
@@ -307,7 +307,7 @@ impl<const BLOCK_DIM: usvt, const LEVEL_COUNT: usize> Svt<Vec<usvt>, BLOCK_DIM, 
         if BLOCK_DIM != 2 && BLOCK_DIM != 4 && BLOCK_DIM != 8 {
             panic!();
         }
-        let mut svt: Self = Svt::new(0);
+        let mut svt: Self = Svt::new(T::EMPTY);
         // TODO fix this transmute
         let rsvo32 = unsafe { std::mem::transmute::<&[u8], &[u32]>(rsvo) };
         let level_max = if BLOCK_DIM == 2 {
@@ -355,7 +355,7 @@ mod tests {
     fn simple_image_render() {
         const BLOCK_DIM: usvt = 2;
         const LEVEL: usize = 2;
-        let mut svt = Svt::<Vec<usvt>, BLOCK_DIM, LEVEL>::new(0);
+        let mut svt = Svt::<usvt, Vec<usvt>, BLOCK_DIM, LEVEL>::new(0);
         let total = BLOCK_DIM.pow(LEVEL as u32);
         // svt.set(Usvt3(0, 0, 0), 1);
         svt.set(Usvt3::new(0, 2, 1), 2);
@@ -381,7 +381,7 @@ mod tests {
                     if hit {
                         let light_level = vec3(0.6, 0.75, 1.0);
                         let color =
-                            vec3(0.3, 0.7, 0.5) * light_level.dot(out_info.mask.abs()) * 255.0;
+                            vec3(0.3, 0.7, 0.5) * light_level.dot(out_info.mask.as_vec3().abs()) * 255.0;
                         image.put_pixel(i, j, Rgb([color.x as u8, color.y as u8, color.z as u8]));
                     }
                     return hit;
@@ -391,7 +391,7 @@ mod tests {
         image.save("test_svt_simple.png").unwrap();
     }
 
-    type MySvt = Svt<Vec<usvt>, 4, 4>;
+    type MySvt = Svt<usvt, Vec<usvt>, 4, 4>;
 
     #[test]
     fn simple_debug() {
@@ -444,11 +444,11 @@ mod tests {
             )
             .subtract(sdfu::Box::new(Vec3A::new(0.2, 2.0, 0.2)))
             .translate(Vec3A::new(0.5, 0.5, 0.5));
-        let mut svt = Svt::<Vec<usvt>, 4, 4>::new(0);
+        let mut svt = Svt::<usvt, Vec<usvt>, 4, 4>::new(0);
         let level_count = 4 as usvt;
         let block_size = 4 as usvt;
         let total_size = block_size.pow(level_count as u32) as f32;
-        svt.sample(&|v| {
+        svt.sample(&mut |v| {
             if sdf.dist(v.as_vec3a() / total_size) < 0.0 {
                 1
             } else {

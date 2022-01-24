@@ -1,6 +1,8 @@
 use super::color::*;
 use crate::math::*;
 
+// all assume normalized ray
+
 // #[derive(Copy, Clone)]
 // pub enum MaterialInteraction {
 //     Scatter {

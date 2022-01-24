@@ -5,7 +5,7 @@ edition = "2021"
 
 
 [dependencies]
-dolly = "0.1.4"
+dolly = "0.2.0"
 bevy = "0.6.0"
 
 common = { path = "../common" }

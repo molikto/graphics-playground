@@ -3,8 +3,7 @@ use std::{
     path::{Path},
 };
 
-use bsoky_shader::{MySvtMut};
-use common::math::svt::*;
+use bsoky_common_cpu::{MySvtMut, sim::VoxelData};
 use common::math::*;
 
 use sdfu::{SDF};
@@ -16,17 +15,21 @@ pub fn debug_create_rsvo() -> MySvtMut {
     MySvtMut::load_from_rsvo(&rsvo, 10)
 }
 
-pub fn debug_create_simple() -> MySvtMut {
-    let mut svt = MySvtMut::new(0);
-    svt.set(Usvt3::new(3, 3, 3), 1);
-    //println!("{:?}", svt.debug_items());
-    //println!("{:?}", mem[0..10].to_vec());
+pub fn debug_create_debug() -> MySvtMut {
+    let mut svt = MySvtMut::new(VoxelData::EMPTY);
+    svt.set(uvec3(10, 0, 0), VoxelData::DEBUG_STONE);
+    svt.set(uvec3(0, 10, 0), VoxelData::DEBUG_STONE);
+    svt.set(uvec3(0, 20, 0), VoxelData::DEBUG_STONE);
+    svt.set(uvec3(0, 0, 10), VoxelData::DEBUG_STONE);
+    svt.set(uvec3(0, 0, 20), VoxelData::DEBUG_STONE);
+    svt.set(uvec3(0, 0, 30), VoxelData::DEBUG_STONE);
     svt
 }
+
 pub fn debug_create_sdf() -> MySvtMut {
     // 4,4 = 0.21
     // 2,8 = 0.11
-    let mut svt = MySvtMut::new(0);
+    let mut svt = MySvtMut::new(VoxelData::EMPTY);
     let sdf = sdfu::Sphere::new(0.45)
         .subtract(sdfu::Box::new(Vec3A::new(0.25, 0.25, 1.5)))
         .union_smooth(
@@ -48,11 +51,11 @@ pub fn debug_create_sdf() -> MySvtMut {
         .scale(0.5)
         .translate(Vec3A::new(0.5, 0.5, 0.5));
     let total_size = MySvtMut::TOTAL_DIM as f32;
-    svt.sample(&|v| {
+    svt.sample(&mut |v| {
         if sdf.dist(v.as_vec3a() / total_size) < 0.0 {
-            1
+            VoxelData::DEBUG_STONE
         } else {
-            0
+            VoxelData::EMPTY
         }
     });
     svt

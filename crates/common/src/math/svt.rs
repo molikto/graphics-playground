@@ -1,4 +1,6 @@
 use core::ops::Deref;
+use core::marker::PhantomData;
+use core::arch::asm;
 
 use super::ray::*;
 use super::vec::*;
@@ -9,6 +11,14 @@ use super::vec::*;
 pub type usvt = u32;
 pub type Usvt3 = UVec3;
 
+pub trait SvtData : From<usvt> + Into<usvt> + Eq + Copy + Clone {
+    const EMPTY: Self;
+}
+
+impl SvtData for usvt {
+    const EMPTY: Self = 0;
+}
+
 const MASK_IS_LEAF: usvt = 1u32 << (usvt::BITS - 1);
 const MASK_DATA: usvt = !MASK_IS_LEAF;
 
@@ -16,32 +26,42 @@ pub fn vec3_to_usvt3(v: Vec3) -> Usvt3 {
     Usvt3::new(v.x as usvt, v.y as usvt, v.z as usvt)
 }
 
+#[derive(Copy, Clone)]
 pub struct BlockRayIntersectionInfo {
-    pub mask: Vec3,
+    pub mask: Sign3,
     pub t: f32,
 }
 
-pub struct BlockInfo<const BLOCK_DIM: usvt, const LEVEL_COUNT: usize> {
+pub struct BlockInfo<T : SvtData, const BLOCK_DIM: usvt, const LEVEL_COUNT: usize> {
     pub level: usvt,
-    pub data: usvt,
+    pub data: T,
 }
 
-impl<const BLOCK_DIM: usvt, const LEVEL_COUNT: usize> BlockInfo<BLOCK_DIM, LEVEL_COUNT> {
+impl<T: SvtData, const BLOCK_DIM: usvt, const LEVEL_COUNT: usize> BlockInfo<T, BLOCK_DIM, LEVEL_COUNT> {
     pub fn size(&self) -> usvt {
         BLOCK_DIM.pow((LEVEL_COUNT as usvt - self.level - 1) as u32)
     }
 }
 
 #[repr(transparent)]
-pub struct Svt<REF: Deref<Target = [usvt]>, const BLOCK_DIM: usvt, const LEVEL_COUNT: usize> {
+pub struct Svt<T: SvtData, REF: Deref<Target = [usvt]>, const BLOCK_DIM: usvt, const LEVEL_COUNT: usize> {
     pub mem: REF,
+    _plat: PhantomData<T>,
 }
 
-impl<REF: Deref<Target = [usvt]>, const BLOCK_DIM: usvt, const LEVEL_COUNT: usize>
-    Svt<REF, BLOCK_DIM, LEVEL_COUNT>
+impl<T: SvtData, REF: Deref<Target = [usvt]>, const BLOCK_DIM: usvt, const LEVEL_COUNT: usize>
+    Svt<T, REF, BLOCK_DIM, LEVEL_COUNT>
 {
     pub const BLOCK_SIZE: usvt = BLOCK_DIM * BLOCK_DIM * BLOCK_DIM;
     pub const TOTAL_DIM: usvt = BLOCK_DIM.pow(LEVEL_COUNT as usvt);
+
+    pub fn new_wrap(r: REF) -> Self {
+        Self {
+            mem: r,
+            _plat: PhantomData,
+        }
+    }
+
 
     pub fn root_block_index(&self) -> usize {
         return 0;
@@ -69,12 +89,13 @@ impl<REF: Deref<Target = [usvt]>, const BLOCK_DIM: usvt, const LEVEL_COUNT: usiz
     }
 
     #[inline]
-    pub fn new_block(terminal: bool, index: usvt) -> usvt {
-        if terminal {
-            return index;
-        } else {
-            return index | MASK_IS_LEAF;
-        }
+    pub(crate) fn new_leaf_block(index: usvt) -> usvt {
+        return index | MASK_IS_LEAF;
+    }
+
+    #[inline]
+    pub(crate) fn new_block(index: T) -> usvt {
+        return index.into();
     }
 
     #[inline]
@@ -119,7 +140,7 @@ impl<REF: Deref<Target = [usvt]>, const BLOCK_DIM: usvt, const LEVEL_COUNT: usiz
         C: FnMut(
             BlockRayIntersectionInfo,
             BlockRayIntersectionInfo,
-            BlockInfo<BLOCK_DIM, LEVEL_COUNT>,
+            BlockInfo<T, BLOCK_DIM, LEVEL_COUNT>,
         ) -> bool,
     {
         const STACK_SIZE: usize = 23;
@@ -288,35 +309,35 @@ impl<REF: Deref<Target = [usvt]>, const BLOCK_DIM: usvt, const LEVEL_COUNT: usiz
         }
         let t_corner = t_coef * (pos + scale_exp2) - t_bias;
 
-        let mut norm = if t_corner.x > t_corner.y && t_corner.x > t_corner.z {
-            vec3(-1.0, 0.0, 0.0)
-        } else {
-            if t_corner.y > t_corner.z {
-                vec3(0.0, -1.0, 0.0)
-            } else {
-                vec3(0.0, 0.0, -1.0)
-            }
-        };
-        if (oct_mask & 1u32) == 0u32 {
-            norm.x = -norm.x;
-        }
-        if (oct_mask & 2u32) == 0u32 {
-            norm.y = -norm.y;
-        }
-        if (oct_mask & 4u32) == 0u32 {
-            norm.z = -norm.z;
-        }
+        // let mut norm = if t_corner.x > t_corner.y && t_corner.x > t_corner.z {
+        //     vec3(-1.0, 0.0, 0.0)
+        // } else {
+        //     if t_corner.y > t_corner.z {
+        //         vec3(0.0, -1.0, 0.0)
+        //     } else {
+        //         vec3(0.0, 0.0, -1.0)
+        //     }
+        // };
+        // if (oct_mask & 1u32) == 0u32 {
+        //     norm.x = -norm.x;
+        // }
+        // if (oct_mask & 2u32) == 0u32 {
+        //     norm.y = -norm.y;
+        // }
+        // if (oct_mask & 4u32) == 0u32 {
+        //     norm.z = -norm.z;
+        // }
 
-        // Undo mirroring of the coordinate system.
-        if (oct_mask & 1u32) != 0u32 {
-            pos.x = 3.0 - scale_exp2 - pos.x;
-        }
-        if (oct_mask & 2u32) != 0u32 {
-            pos.y = 3.0 - scale_exp2 - pos.y;
-        }
-        if (oct_mask & 4u32) != 0u32 {
-            pos.z = 3.0 - scale_exp2 - pos.z;
-        }
+        // // Undo mirroring of the coordinate system.
+        // if (oct_mask & 1u32) != 0u32 {
+        //     pos.x = 3.0 - scale_exp2 - pos.x;
+        // }
+        // if (oct_mask & 2u32) != 0u32 {
+        //     pos.y = 3.0 - scale_exp2 - pos.y;
+        // }
+        // if (oct_mask & 4u32) != 0u32 {
+        //     pos.z = 3.0 - scale_exp2 - pos.z;
+        // }
 
         // Output results.
         // o_pos = (o + t_min * d).max(pos).min(scale_exp2);
@@ -327,22 +348,22 @@ impl<REF: Deref<Target = [usvt]>, const BLOCK_DIM: usvt, const LEVEL_COUNT: usiz
         // if (norm.z != 0)
         //     o_pos.z = norm.z > 0 ? pos.z + scale_exp2 + EPS * 2 : pos.z - EPS;
         closure(
-            BlockRayIntersectionInfo { mask: norm, t: t_min },
-            BlockRayIntersectionInfo { mask: norm, t: 0.0 },
+            BlockRayIntersectionInfo { mask: Sign3::ZERO, t: t_min },
+            BlockRayIntersectionInfo { mask: Sign3::ZERO, t: 0.0 },
             BlockInfo {
                 level: 0,
-                data: cur,
+                data: cur.into(),
             },
         );
         iter
     }
 
-    pub fn traverse_ray_within(&self, ray: Ray3, max_distance: f32) -> Option<(BlockRayIntersectionInfo, BlockInfo<BLOCK_DIM, LEVEL_COUNT>)>{
+    pub fn traverse_ray_within(&self, ray: Ray3, max_distance: f32) -> Option<(BlockRayIntersectionInfo, BlockInfo<T, BLOCK_DIM, LEVEL_COUNT>)>{
         let mut ret = None;
         self.traverse_ray(1000, ray, |in_pos, _, block| {
             if ray.at(in_pos.t).distance(ray.pos) > max_distance {
                 true
-            } else if block.data != 0 {
+            } else if block.data != T::EMPTY {
                 ret = Some((in_pos, block));
                 true
             } else {
@@ -352,13 +373,16 @@ impl<REF: Deref<Target = [usvt]>, const BLOCK_DIM: usvt, const LEVEL_COUNT: usiz
         ret
     }
 
+    /**
+     * assume normalized ray
+     */
     #[inline]
     pub fn traverse_ray<C>(&self, max_count: u32, ray: Ray3, mut closure: C) -> i32
     where
         C: FnMut(
             BlockRayIntersectionInfo,
             BlockRayIntersectionInfo,
-            BlockInfo<BLOCK_DIM, LEVEL_COUNT>,
+            BlockInfo<T, BLOCK_DIM, LEVEL_COUNT>,
         ) -> bool,
     {
         // if BLOCK_DIM == 2 {
@@ -373,21 +397,20 @@ impl<REF: Deref<Target = [usvt]>, const BLOCK_DIM: usvt, const LEVEL_COUNT: usiz
         }
         let ray_dir_inv = 1.0 / ray.dir;
         let ray_pos_div_ray_dir = ray.pos / ray.dir;
-        let ray_dir_signum = ray.dir.signum();
-        let ray_dir_limit_mul = (ray_dir_signum + 1.0) / 2.0;
+        let ray_dir_signum = ray.dir.sign();
 
-        let mut mask: Vec3;
+        let mut mask: Sign3;
         let mut position: Vec3;
 
         use crate::Aabb3;
         let aabb = Aabb3::new(Vec3::ZERO, Vec3::splat(Self::TOTAL_DIM as f32));
-        if aabb.inside(ray.pos) {
-            mask = Vec3::ZERO;
+        if aabb.contains(ray.pos) {
+            mask = Sign3::ZERO;
             position = ray.pos;
         } else {
             let hit = aabb.hit(&ray, 0.0, 100000000000.0);
             if hit.is_hit {
-                mask = hit.nor;
+                mask = hit.nor.sign();
                 position = ray.at(hit.t + 0.0001);
             } else {
                 return 0;
@@ -397,7 +420,7 @@ impl<REF: Deref<Target = [usvt]>, const BLOCK_DIM: usvt, const LEVEL_COUNT: usiz
         let mut block_indexs = [0usize; LEVEL_COUNT];
         block_indexs[0] = self.root_block_index() * (Self::BLOCK_SIZE as usize);
 
-        let block_limit = ray_dir_limit_mul * (Self::TOTAL_DIM as f32);
+        let block_limit = ray_dir_signum.non_neg_mul(Vec3::splat(Self::TOTAL_DIM as f32));
         let ts = block_limit * ray_dir_inv - ray_pos_div_ray_dir;
         let ts_min = ts.x.min(ts.y).min(ts.z);
         let mut block_limits = [ts_min; LEVEL_COUNT];
@@ -419,17 +442,17 @@ impl<REF: Deref<Target = [usvt]>, const BLOCK_DIM: usvt, const LEVEL_COUNT: usiz
                 let target_block = self.mem[target_block_index];
                 index = Self::block_index_data(target_block);
                 let block_limit =
-                    (level_position_abs.as_vec3() + ray_dir_limit_mul) * (level_dim_div as f32);
+                    ray_dir_signum.non_neg_add(level_position_abs.as_vec3()) * (level_dim_div as f32);
                 let ts = block_limit * ray_dir_inv - ray_pos_div_ray_dir;
                 let ts_min = ts.x.min(ts.y).min(ts.z);
                 if Self::is_terminal_block(target_block) {
                     let incident = BlockRayIntersectionInfo { t, mask };
                     t = ts_min;
-                    mask = ts.step_f(t) * ray_dir_signum;
-                    if mask == Vec3::ZERO {
+                    mask = - ts.leq(t) * ray_dir_signum;
+                    if mask == Sign3::ZERO {
                         return -2;
                     }
-                    let block_info = BlockInfo { level, data: index };
+                    let block_info = BlockInfo { level, data: index.into() };
                     let ret = closure(incident, BlockRayIntersectionInfo { t, mask }, block_info);
                     if ret {
                         return count as i32;
@@ -443,19 +466,19 @@ impl<REF: Deref<Target = [usvt]>, const BLOCK_DIM: usvt, const LEVEL_COUNT: usiz
                 }
             }
             // we add extra value so we don't step on the boundary. `position = ray.at(t + 0.01)` doesn't work
-            let position_new = ray.at(t) + mask * 0.5;
+            let position_new = ray.at(t) - mask.as_vec3() * 0.5;
             // comparing `t = if ts_min < t { t + 0.0001 } else { ts_min };` doesn't work!! needs to do it like bellow
-            position.x = if ray_dir_signum.x > 0.0 {
+            position.x = if ray_dir_signum.xp() {
                 position.x.max(position_new.x)
             } else {
                 position.x.min(position_new.x)
             };
-            position.y = if ray_dir_signum.y > 0.0 {
+            position.y = if ray_dir_signum.yp() {
                 position.y.max(position_new.y)
             } else {
                 position.y.min(position_new.y)
             };
-            position.z = if ray_dir_signum.z > 0.0 {
+            position.z = if ray_dir_signum.zp() {
                 position.z.max(position_new.z)
             } else {
                 position.z.min(position_new.z)

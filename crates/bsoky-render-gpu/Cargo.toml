@@ -1,19 +1,21 @@
 [package]
-name = "bsoky-shader"
+name = "bsoky-render-gpu"
 version = "0.1.0"
 edition = "2021"
 
 [lib]
 crate-type = ["dylib"]
 
-[build]
-target = "spirv-unknown-spv1.5"
+[build-dependencies]
+spirv-builder = { git = "https://github.com/EmbarkStudios/rust-gpu/", features = [ "watch"] }
 
 [dependencies]
 spirv-std = { git = "https://github.com/EmbarkStudios/rust-gpu/", features = [
     "glam",
 ] }
 common = { path = "../common" }
+bsoky-common-cgpu = { path = "../bsoky-common-cgpu" }
+bsoky-render-cgpu = { path = "../bsoky-render-cgpu" }
 
 [target.'cfg(not(target_arch = "spirv"))'.dependencies]
 bevy_crevice = { version = "0.6.0", features=["glam" ] }

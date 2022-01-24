@@ -1,0 +1,10 @@
+[package]
+name = "bsoky-render-cgpu"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+common = { path = "../common" }
+
+[target.'cfg(not(target_arch = "spirv"))'.dependencies]
+bevy_crevice = { version = "0.6.0", features=["glam" ] }

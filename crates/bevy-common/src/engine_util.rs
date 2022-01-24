@@ -1,12 +1,16 @@
 use bevy::{
     math::Vec3,
     pbr::{PbrBundle, StandardMaterial},
-    prelude::{AssetServer, Assets, Commands, ResMut, Transform, Color},
+    prelude::{
+        AssetServer, Assets, Camera, Color, Commands, GlobalTransform, Res, ResMut, Transform,
+    },
     render::{
         mesh::{shape, Indices, Mesh},
         render_resource::PrimitiveTopology,
     },
+    utils::Instant,
 };
+use common::{vec4, Mat4, Ray3, UVec2, shader::base_uniform::RayTracingViewInfo};
 
 fn create_single_debug_cube(
     commands: &mut Commands,
@@ -15,17 +19,16 @@ fn create_single_debug_cube(
     pos: Vec3,
     color: Color,
 ) {
-    commands
-        .spawn_bundle(PbrBundle {
-            mesh: meshes.add(Mesh::from(shape::Cube { size: 0.1 })),
-            material: materials.add(StandardMaterial {
-                base_color: color,
-                unlit: true,
-                ..Default::default()
-            }),
-            transform: Transform::from_translation(pos),
+    commands.spawn_bundle(PbrBundle {
+        mesh: meshes.add(Mesh::from(shape::Cube { size: 0.1 })),
+        material: materials.add(StandardMaterial {
+            base_color: color,
+            unlit: true,
             ..Default::default()
-        });
+        }),
+        transform: Transform::from_translation(pos),
+        ..Default::default()
+    });
 }
 
 pub fn create_debug_cube(
@@ -33,10 +36,34 @@ pub fn create_debug_cube(
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
 ) {
-    create_single_debug_cube(&mut commands, &mut meshes, &mut materials, Vec3::ZERO, Color::WHITE);
-    create_single_debug_cube(&mut commands, &mut meshes, &mut materials, Vec3::X * 10.0, Color::RED);
-    create_single_debug_cube(&mut commands, &mut meshes, &mut materials, Vec3::Y * 10.0, Color::GREEN);
-    create_single_debug_cube(&mut commands, &mut meshes, &mut materials, Vec3::Z * 10.0, Color::BLUE);
+    create_single_debug_cube(
+        &mut commands,
+        &mut meshes,
+        &mut materials,
+        Vec3::ZERO,
+        Color::WHITE,
+    );
+    create_single_debug_cube(
+        &mut commands,
+        &mut meshes,
+        &mut materials,
+        Vec3::X * 10.0,
+        Color::RED,
+    );
+    create_single_debug_cube(
+        &mut commands,
+        &mut meshes,
+        &mut materials,
+        Vec3::Y * 10.0,
+        Color::GREEN,
+    );
+    create_single_debug_cube(
+        &mut commands,
+        &mut meshes,
+        &mut materials,
+        Vec3::Z * 10.0,
+        Color::BLUE,
+    );
 }
 
 pub fn enable_hot_reloading(asset_server: ResMut<AssetServer>) {
@@ -154,5 +181,49 @@ impl From<RevertBox> for Mesh {
         mesh.set_attribute(Mesh::ATTRIBUTE_UV_0, uvs);
         mesh.set_indices(Some(indices));
         mesh
+    }
+}
+
+pub fn watch_for_changes(asset_server: Res<AssetServer>) {
+    asset_server.watch_for_changes().unwrap();
+}
+
+pub fn center_ray(camera: &Camera, transform: &GlobalTransform) -> Ray3 {
+    let matrix = transform.compute_matrix() * camera.projection_matrix.inverse();
+    let near = matrix.project_point3(Vec3::new(0.0, 0.0, -1.0));
+    let far = matrix.project_point3(Vec3::new(0.0, 0.0, 1.0));
+    let dir = far - near;
+    let ray = Ray3 {
+        pos: near,
+        dir: dir.normalize(),
+    };
+    ray
+}
+
+#[derive(Clone, Copy, PartialEq, Default)]
+pub struct CameraProp {
+    pub transform: GlobalTransform,
+    pub view_projection: Mat4,
+}
+impl CameraProp {
+    pub fn get_ray_tracing_uniform(&self, size: UVec2, time: f32, frame_index: u32) -> RayTracingViewInfo {
+        let transform = self.transform.compute_matrix();
+        let inverse_projection = self.view_projection.inverse();
+        let mut top_left = inverse_projection * vec4(-1.0, 1.0, -1.0, 1.0);
+        let bottom_right = inverse_projection * vec4(1.0, -1.0, -1.0, 1.0);
+        let mut camera_h = (bottom_right - top_left) / (size.x as f32);
+        camera_h.y = 0.0;
+        let mut camera_v = (bottom_right - top_left) / (size.y as f32);
+        camera_v.x = 0.0;
+        top_left.w = 0.0;
+        RayTracingViewInfo {
+            camera_pos: self.transform.translation,
+            camera_look: (transform * top_left).truncate(),
+            camera_h: (transform * camera_h).truncate(),
+            camera_v: (transform * camera_v).truncate(),
+            time,
+            frame_index,
+            not_used: UVec2::ZERO,
+        }
     }
 }

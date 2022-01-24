@@ -29,11 +29,8 @@ impl Aabb2 {
     // pub fn inside(self: &Aabb2, p: Vec2) -> bool {
     //     p.x >= self.min.x && p.x <= self.max.x && p.y >= self.min.y && p.y <= self.max.y
     // }
-
-    // TODO these inside function should account for edges
-    pub fn inside(self, p: Vec2) -> bool {
-        let s = self.min.step(p) - self.max.step(p);
-        return s.x * s.y == 1.0;
+    pub fn contains(self, p: Vec2) -> bool {
+        p.x >= self.min.x && p.x <= self.max.x && p.y >= self.min.y && p.y <= self.max.y
     }
 
     pub fn extend(self: &Self, axis: usize, min: f32, max: f32) -> Aabb3 {
@@ -54,7 +51,7 @@ impl core::ops::Add<Vec3> for Aabb3 {
     }
 }
 
-#[cfg_attr(not(target_arch = "spirv"), derive(AsStd140))]
+#[cfg_attr(not(target_arch = "spirv"), derive(AsStd140, Debug))]
 #[derive(Copy, Clone, Default)]
 pub struct Aabb3 {
     pub min: Vec3,
@@ -73,26 +70,25 @@ impl Aabb3 {
         Aabb3 { min: min, max: max }
     }
 
-    pub fn omit(self: &Self, side: usize) -> Aabb2 {
+    pub fn omit(&self, side: usize) -> Aabb2 {
         Aabb2 {
             min: self.min.omit_axis(side),
             max: self.max.omit_axis(side),
         }
     }
 
-    pub fn inside(self: &Self, p: Vec3) -> bool {
-        let s = self.min.step(p) - self.max.step(p);
-        return s.x * s.y * s.z == 1.0;
-    }
+    pub fn contains(&self, p: Vec3) -> bool {
+         self.min.x <= p.x && p.x <= self.max.x && self.min.y <= p.y && p.y <= self.max.y && self.min.z <= p.z && p.z <= self.max.z 
+        }
 
-    pub fn union(a: &Aabb3, b: &Aabb3) -> Aabb3 {
+    pub fn union(&self, b: &Aabb3) -> Aabb3 {
         Aabb3 {
-            min: a.min.min(b.min),
-            max: a.max.max(b.max),
+            min: self.min.min(b.min),
+            max: self.max.max(b.max),
         }
     }
 
-    pub fn hit_fast(self: &Aabb3, ray: &Ray3, t_min: f32, t_max: f32) -> bool {
+    pub fn hit_fast(&self, ray: &Ray3, t_min: f32, t_max: f32) -> bool {
         for a in 0..3 {
             let inv = 1.0 / ray.dir.get(a);
             let mut t0 = (self.min.get(a) - ray.pos.get(a)) * inv;
@@ -131,7 +127,7 @@ impl Aabb3 {
             }
             if t_min < t0 && t_max1 > t0 {
                 let point = ray.at(t0);
-                if side.inside(point.omit_axis(a)) {
+                if side.contains(point.omit_axis(a)) {
                     candidate.is_hit = true;
                     candidate.from_outside = false;
                     candidate.nor = axis;
@@ -139,7 +135,7 @@ impl Aabb3 {
                 }
             } else if t_min < t1 && t_max1 > t1 {
                 let point = ray.at(t1);
-                if side.inside(point.omit_axis(a)) {
+                if side.contains(point.omit_axis(a)) {
                     candidate.is_hit = true;
                     candidate.from_outside = true;
                     candidate.nor = axis;

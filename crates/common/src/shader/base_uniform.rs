@@ -17,3 +17,16 @@ pub struct ViewUniform {
 pub struct MeshUniform {
   pub transform: Mat4,
 }
+
+
+// TODO change order of things in this will make it dont work???!!!
+#[cfg_attr(not(target_arch = "spirv"), derive(bevy_crevice::std430::AsStd430, bevy_crevice::std140::AsStd140, Debug))]
+pub struct RayTracingViewInfo {
+    pub camera_pos: Vec3,
+    pub camera_look: Vec3,
+    pub camera_h: Vec3,
+    pub camera_v: Vec3,
+    pub not_used: UVec2,
+    pub time: f32,
+    pub frame_index: u32,
+}
