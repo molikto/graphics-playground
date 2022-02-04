@@ -2,13 +2,13 @@ use bevy::{
     math::Vec3,
     pbr::{PbrBundle, StandardMaterial},
     prelude::{
-        AssetServer, Assets, Camera, Color, Commands, GlobalTransform, Res, ResMut, Transform,
+        AssetServer, Assets, Camera, Color, Commands, GlobalTransform, Res, ResMut, Transform, App, Handle, Shader,
     },
     render::{
         mesh::{shape, Indices, Mesh},
         render_resource::PrimitiveTopology,
     },
-    utils::Instant,
+    utils::Instant, asset::AssetPath,
 };
 use common::{vec4, Mat4, Ray3, UVec2, shader::base_uniform::RayTracingViewInfo};
 
@@ -64,11 +64,6 @@ pub fn create_debug_cube(
         Vec3::Z * 10.0,
         Color::BLUE,
     );
-}
-
-pub fn enable_hot_reloading(asset_server: ResMut<AssetServer>) {
-    // Watch for changes
-    asset_server.watch_for_changes().unwrap();
 }
 
 #[derive(Debug, Copy, Clone)]
@@ -184,11 +179,7 @@ impl From<RevertBox> for Mesh {
     }
 }
 
-pub fn watch_for_changes(asset_server: Res<AssetServer>) {
-    asset_server.watch_for_changes().unwrap();
-}
-
-pub fn center_ray(camera: &Camera, transform: &GlobalTransform) -> Ray3 {
+pub fn center_ray((camera, transform): (&Camera, &GlobalTransform)) -> Ray3 {
     let matrix = transform.compute_matrix() * camera.projection_matrix.inverse();
     let near = matrix.project_point3(Vec3::new(0.0, 0.0, -1.0));
     let far = matrix.project_point3(Vec3::new(0.0, 0.0, 1.0));
@@ -226,4 +217,10 @@ impl CameraProp {
             not_used: UVec2::ZERO,
         }
     }
+}
+
+pub fn load_shader<'a, P: Into<AssetPath<'a>>>(app: &mut App, p: P) -> Handle<Shader> {
+    let world = &mut app.world;
+    let asset_server = world.get_resource::<AssetServer>().unwrap();
+    asset_server.load(p)
 }

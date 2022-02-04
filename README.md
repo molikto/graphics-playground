@@ -5,16 +5,16 @@ my graphics playground in Rust, using:
 * https://github.com/EmbarkStudios/rust-gpu
 * https://github.com/bevyengine/bevy
 
-run with `cargo run -p bsoky-render-cpu --release`
+run with `cargo run -p toy-xxx --release`
 
 ## done and TODOs
 
 * data structures (in `common`)
     * sparse voxel N-tree (`svt.rs`) and ray casting: no children masks, each voxel is 4 byte pointer or data
         * performance
-            * [X] compare with ESVO performance -- see [here](crates/common/SVT_PERF.md) (~5 times slower)
+            * [X] compare with ESVO performance
             * [ ] optimize it to be faster
-                * [ ] **rust-gpu performance problem**
+                * [X] rust-gpu performance problem
                 * [ ] why the compute shader version is even slower?
             * [ ] beam optimization
             * [ ] redirect rays
@@ -30,10 +30,6 @@ run with `cargo run -p bsoky-render-cpu --release`
     * [ ] more physics based materials?
     * [ ] TAA???
     * [ ] DLSS???
-* voxel renderer (in `bsoky`)
-    * [X] progressive rendering (Bevy `RenderGraph`)
-    * [ ] **WrldTmp style world modification supporting 1024^3 worlds**
-    * [ ] realtime rendering hardware API
 * engine
     * [X] shader hot reloading of rust-gpu shader in bevy
     * [ ] compute shader hot reloading (using include_raw is very bad)
@@ -44,12 +40,11 @@ run with `cargo run -p bsoky-render-cpu --release`
 
 * you cannnot do `vec[0]`, use `vec.x` instead
 * no specialization constant
-* code generation
-    * vec is expanded
-    * vec normalize is not implemented using spirv code
+* you need to be sure not to write performance bad code
     * array initialization
     * array bound check
-
+* perf is ~1.25 times of GLSL, it might produce branchy code seems?
+* code generation: it expand vec ops not as SpirV vec ops, but this doesn't hurt performance most of time
 
 ## referneces
 
@@ -86,3 +81,5 @@ run with `cargo run -p bsoky-render-cpu --release`
     * https://github.com/EmbarkStudios/kajiya
 * webgpu & rust-gpu
     * the compute shader are adapted from https://github.com/googlefonts/compute-shader-101
+
+

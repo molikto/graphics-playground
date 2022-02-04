@@ -29,4 +29,11 @@ pub struct RayTracingViewInfo {
     pub not_used: UVec2,
     pub time: f32,
     pub frame_index: u32,
+} 
+impl RayTracingViewInfo {
+  pub fn get_ray(&self, frag_coord: Vec2) -> Ray3 {
+    let pos = self.camera_pos;
+    let dir = self.camera_look + frag_coord.x * self.camera_h + frag_coord.y * self.camera_v;
+    Ray3 { pos, dir }
+  }
 }

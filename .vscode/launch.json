@@ -7,28 +7,6 @@
     {
       "type": "lldb",
       "request": "launch",
-      "name": "Debug executable 'bsoky'",
-      "cargo": {
-        "args": [
-          "build",
-          "--bin=bsoky",
-          "--package=bsoky"
-        ],
-        "filter": {
-          "name": "bsoky",
-          "kind": "bin"
-        }
-      },
-      "args": [],
-      "cwd": "${workspaceFolder}",
-      "env": {
-        "CARGO_MANIFEST_DIR": "${workspaceFolder}\\crates\\bsoky",
-        "RUST_BACKTRACE": "full"
-      }
-    },
-    {
-      "type": "lldb",
-      "request": "launch",
       "name": "Debug unit tests in 'common'",
       "cargo": {
         "args": [

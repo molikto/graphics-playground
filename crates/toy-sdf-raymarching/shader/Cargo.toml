@@ -1,0 +1,16 @@
+[package]
+name = "toy-sdf-raymarching-shader"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+crate-type = ["dylib"]
+
+[dependencies]
+spirv-std = { git = "https://github.com/EmbarkStudios/rust-gpu/", features = [
+    "glam",
+] }
+common = { path = "../../common" }
+
+[patch.crates-io]
+glam = { git="https://github.com/molikto/glam-rs", branch="spirv" }

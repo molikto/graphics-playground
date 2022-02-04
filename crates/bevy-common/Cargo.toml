@@ -6,6 +6,9 @@ edition = "2021"
 
 [dependencies]
 dolly = "0.2.0"
-bevy = "0.6.0"
 
 common = { path = "../common" }
+
+bevy = "0.6.0"
+bevy_crevice = { version = "0.6.0", features=["glam" ] }
+wgpu = "*"

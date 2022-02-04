@@ -1,6 +1,5 @@
 [workspace]
-members = [ "./crates/*" ]
-exclude = ["./crates/bsoky-render-gpu"]
+members = [ "./crates/*", "./crates/*/shader" ]
 resolver = "2"
 
 # compile build scripts (which might include rust-gpu) optimized
@@ -21,19 +20,24 @@ opt-level = 3
 # debug = true
 
 [patch.crates-io]
-num-traits = { git = "https://github.com/rust-num/num-traits" }
 # bevy = { git="https://github.com/bevyengine/bevy", branch="main" }
+
 bevy = { git = "https://github.com/molikto/bevy", branch="shader-bypass" }
 bevy_crevice = { git = "https://github.com/molikto/bevy", branch="shader-bypass" }
 
-[patch."https://github.com/bevyengine/bevy"]
-bevy = { git = "https://github.com/molikto/bevy", branch="shader-bypass" }
-bevy_crevice = { git = "https://github.com/molikto/bevy", branch="shader-bypass" }
+# bevy =  { path="../bevy" }
+# bevy_crevice =  { path="../bevy/crates/bevy_crevice" }
+
+naga = { git="https://github.com/gfx-rs/naga", rev="f9b348557a31053cd97156178c26f7d9f3205a7d" }
+
+# glam = { path= "../glam-rs" }
+
+# [patch."https://github.com/bevyengine/bevy"]
+# bevy = { git = "https://github.com/molikto/bevy", branch="shader-bypass" }
+# bevy_crevice = { git = "https://github.com/molikto/bevy", branch="shader-bypass" }
 
 [patch."https://github.com/EmbarkStudios/rust-gpu"]
-# spirv-builder = { git= "https://github.com/molikto/rust-gpu", branch="my-main"}
-# spirv-std = { git= "https://github.com/molikto/rust-gpu", branch="my-main"}
+spirv-builder = { git= "https://github.com/molikto/rust-gpu", branch="my-main"}
 # spirv-builder = { path = "..\\rust-gpu\\crates\\spirv-builder" }
-# spirv-std = { path = "..\\rust-gpu\\crates\\spirv-std" }
 
 ## bevy 4423a2fa2dc82fad71525ed3f44e16b8481a4902

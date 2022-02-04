@@ -1,4 +1,7 @@
-use core::ops::{Add, Div, Mul, Rem, Neg};
+use core::ops::{Add, Div, Mul, Rem};
+use super::axis::*;
+
+use super::sign::*;
 
 pub use glam::*;
 
@@ -9,50 +12,13 @@ use num_traits::Zero;
 
 pub trait MyVecExt {
     // TODO CPU version with indexing
-    fn get(self, a: usize) -> f32;
     fn try_normalize_or(self, other: Self) -> Self;
     fn sum(self) -> f32;
-    fn new_axis(u: usize) -> Self;
-}
-
-pub trait MyUVecExt {
-    fn get(self, a: usize) -> u32;
-}
-
-impl MyUVecExt for UVec3 {
-    fn get(self, a: usize) -> u32 {
-        match a {
-            0 => self.x,
-            1 => self.y,
-            _ => self.z,
-        }
-    }
 }
 
 impl MyVecExt for Vec3 {
     fn sum(self) -> f32 {
         self.dot(Self::splat(1.0))
-    }
-
-    #[inline]
-    fn get(self, a: usize) -> f32 {
-        match a {
-            0 => self.x,
-            1 => self.y,
-            _ => self.z,
-        }
-    }
-
-    fn new_axis(a: usize) -> Vec3 {
-        if a == 0 {
-            Vec3::new(1.0, 0.0, 0.0)
-        } else if a == 1 {
-            Vec3::new(0.0, 1.0, 0.0)
-        } else if a == 2 {
-            Vec3::new(0.0, 0.0, 1.0)
-        } else {
-            panic!()
-        }
     }
 
     fn try_normalize_or(self, other: Self) -> Self {
@@ -70,16 +36,6 @@ impl MyVecExt for Vec2 {
         self.dot(Self::splat(1.0))
     }
 
-    fn new_axis(a: usize) -> Vec2 {
-        if a == 0 {
-            Vec2::new(1.0, 0.0)
-        } else if a == 1 {
-            Vec2::new(0.0, 1.0)
-        } else {
-            panic!()
-        }
-    }
-
     fn try_normalize_or(self, other: Self) -> Self {
         let rcp = self.length_recip();
         if rcp.is_finite() && rcp > 0.0 {
@@ -88,46 +44,61 @@ impl MyVecExt for Vec2 {
             other
         }
     }
-
-    #[inline]
-    fn get(self, a: usize) -> f32 {
-        return match a {
-            0 => self.x,
-            _ => self.y,
-        };
-    }
 }
 
 pub trait MyVec2Ext {
-    fn extend_axis(self, a: usize, s: f32) -> Vec3;
+    fn get(self, a: Axis2) -> f32;
+    fn extend_axis(self, a: Axis3, s: f32) -> Vec3;
 }
 
 impl MyVec2Ext for Vec2 {
     #[inline]
-    fn extend_axis(self, a: usize, s: f32) -> Vec3 {
-        if a == 0 {
+    fn extend_axis(self, a: Axis3, s: f32) -> Vec3 {
+        if a == Axis3::X {
             Vec3::new(s, self.x, self.y)
-        } else if a == 1 {
+        } else if a == Axis3::Y {
             Vec3::new(self.x, s, self.y)
-        } else if a == 2 {
+        } else if a == Axis3::Z {
             Vec3::new(self.x, self.y, s)
         } else {
             panic!()
         }
     }
+
+    fn get(self, a: Axis2) -> f32 {
+        if a == Axis2::X {
+            self.x
+        } else {
+            self.y
+        }
+    }
 }
 
 pub trait MyVec3Ext {
-    fn omit_axis(self, a: usize) -> Vec2;
+    fn get(self, a: Axis3) -> f32;
+    fn omit_axis(self, a: Axis3) -> Vec2;
     fn omit_by_nonzero(self, mask: Sign3) -> Vec2;
     fn reflect(self, normal: Self) -> Self;
     fn sin(self) -> Vec3;
     fn sign(self) -> Sign3;
+    fn margin_unit(self, margin: f32) -> Sign3;
     fn leq(self, other: f32) -> Sign3;
     fn de_eps(self, eps: f32) -> Vec3;
 }
 
 impl MyVec3Ext for Vec3 {
+    
+    #[inline]
+    fn get(self, a: Axis3) -> f32 {
+        if a == Axis3::X {
+            self.x
+        } else if a == Axis3::Y {
+            self.y
+        } else {
+            self.z
+        }
+    }
+
     fn de_eps(self, eps: f32) -> Vec3 {
         let mut d = self;
         d.x = if d.x.abs() > eps {
@@ -155,12 +126,12 @@ impl MyVec3Ext for Vec3 {
     }
 
     #[inline]
-    fn omit_axis(self, a: usize) -> Vec2 {
-        if a == 0 {
+    fn omit_axis(self, a: Axis3) -> Vec2 {
+        if a == Axis3::X {
             self.yz()
-        } else if a == 1 {
+        } else if a == Axis3::Y {
             self.xz()
-        } else if a == 2 {
+        } else if a == Axis3::Z {
             self.xy()
         } else {
             panic!()
@@ -193,7 +164,30 @@ impl MyVec3Ext for Vec3 {
             self.xy()
         }
     }
+
+    fn margin_unit(self, margin: f32) -> Sign3 {
+        let mut res_faces = Sign3::ZERO;
+        let pos_margin = 1.0 - margin;
+        if self.x < margin {
+            res_faces.set_xn(true)
+        } else if self.x > pos_margin {
+            res_faces.set_xp(true)
+        }
+        if self.y < margin {
+            res_faces.set_yn(true)
+        } else if self.y > pos_margin {
+            res_faces.set_yp(true)
+        }
+        if self.z < margin {
+            res_faces.set_zn(true)
+        } else if self.z > pos_margin {
+            res_faces.set_zp(true)
+        }
+        res_faces
+    }
 }
+
+
 
 // suvec3
 
@@ -294,263 +288,16 @@ impl Rem<u16> for SUVec3 {
     }
 }
 
-#[derive(Clone, Copy, PartialEq, Eq)]
-pub struct Bool3(u32);
 
-impl Bool3 {}
+#[cfg(test)]
+mod tests {
+    use super::*;
 
-#[derive(Clone, Copy, PartialEq, Eq)]
-pub struct Sign3(u32);
-
-impl Sign3 {
-    pub const ZERO: Sign3 = Sign3(0);
-
-    pub fn to_face3(self) -> Face3 {
-        Face3(self.0)
+    #[test]
+    fn vec_margin() {
+        assert_eq!(
+        Vec3::new(0.95, 0.5, 0.0).margin_unit(0.1).as_vec3(),
+        Vec3::new(1.0, 0.0, -1.0))
     }
 
-
-    pub fn new_nonneg(x: bool, y: bool, z: bool) -> Sign3 {
-        Self((x as u32) << 1 | (y as u32) << 3 | (z as u32) << 5)
-    }
-    pub fn new(x: f32, y: f32, z: f32) -> Sign3 {
-        Self(
-            if x < 0.0 {
-                1
-            } else if x > 0.0 {
-                2
-            } else {
-                0
-            } | if y < 0.0 {
-                4
-            } else if y > 0.0 {
-                8
-            } else {
-                0
-            } | if z < 0.0 {
-                16
-            } else if z > 0.0 {
-                32
-            } else {
-                0
-            },
-        )
-    }
-    pub fn non_neg(self) -> Self {
-        Self(self.0 & 0b101010)
-    }
-
-    pub fn non_neg_mul(self, other: Vec3) -> Vec3 {
-        // self.non_neg().as_vec3() + other
-        let mut out = other;
-        if self.0 & 2 == 0 {
-            out.x = 0.0;
-        };
-        if self.0 & 8 == 0 {
-            out.y = 0.0;
-        };
-        if self.0 & 32 == 0 {
-            out.z = 0.0;
-        };
-        out
-    }
-
-    pub fn non_neg_add(self, other: Vec3) -> Vec3 {
-        // self.non_neg().as_vec3() + other
-        let mut out = other;
-        if self.0 & 2 != 0 {
-            out.x +=1.0;
-        };
-        if self.0 & 8 != 0 {
-            out.y += 1.0;
-        };
-        if self.0 & 32 != 0 {
-            out.z += 1.0;
-        };
-        out
-    }
-
-    pub fn as_vec3(self) -> Vec3 {
-        let x = if self.0 & 1 != 0 {
-            -1.0
-        } else if self.0 & 2 != 0 {
-            1.0
-        } else {
-            0.0
-        };
-        let y = if self.0 & 4 != 0 {
-            -1.0
-        } else if self.0 & 8 != 0 {
-            1.0
-        } else {
-            0.0
-        };
-        let z = if self.0 & 16 != 0 {
-            -1.0
-        } else if self.0 & 32 != 0 {
-            1.0
-        } else {
-            0.0
-        };
-        vec3(x, y, z)
-    }
-    pub fn xn(self) -> bool {
-        self.0 & 1 != 0
-    }
-    pub fn xp(self) -> bool {
-        self.0 & 2 != 0
-    }
-    pub fn x(self) -> bool {
-        self.0 & (1 | 2) != 0
-    }
-    pub fn yn(self) -> bool {
-        self.0 & 4 != 0
-    }
-    pub fn yp(self) -> bool {
-        self.0 & 8 != 0
-    }
-    pub fn y(self) -> bool {
-        self.0 & (4 | 8) != 0
-    }
-    pub fn zn(self) -> bool {
-        self.0 & 16 != 0
-    }
-    pub fn zp(self) -> bool {
-        self.0 & 32 != 0
-    }
-    pub fn z(self) -> bool {
-        self.0 & (32 | 16) != 0
-    }
-    pub fn set_xn(&mut self, xn: bool) {
-        self.0 = (self.0 & !1) | (if xn { 1 } else { 0 });
-    }
-
-    pub fn set_xp(&mut self, xp: bool) {
-        self.0 = (self.0 & !2) | (if xp { 2 } else { 0 });
-    }
-
-    pub fn set_yn(&mut self, yn: bool) {
-        self.0 = (self.0 & !4) | (if yn { 4 } else { 0 });
-    }
-
-    pub fn set_yp(&mut self, yp: bool) {
-        self.0 = (self.0 & !8) | (if yp { 8 } else { 0 });
-    }
-
-    pub fn set_zn(&mut self, zn: bool) {
-        self.0 = (self.0 & !16) | (if zn { 16 } else { 0 });
-    }
-    pub fn set_zp(&mut self, zp: bool) {
-        self.0 = (self.0 & !32) | (if zp { 32 } else { 0 });
-    }
-}
-
-impl Neg for Sign3 {
-    type Output = Sign3;
-
-    // TODO this is bad
-    fn neg(self) -> Sign3 {
-        let v= self.as_vec3();
-        Self::new(-v.x, -v.y, -v.z)
-    }
-}
-
-impl Mul<Sign3> for Sign3 {
-    type Output = Sign3;
-
-    // TODO this is bad
-    fn mul(self, rhs: Sign3) -> Self::Output {
-        let v = self.as_vec3() * rhs.as_vec3();
-        Self::new(v.x, v.y, v.z)
-    }
-}
-
-#[derive(Clone, Copy, PartialEq, Eq)]
-pub struct Face3(u32);
-
-impl Face3 {
-    pub const NONE: Face3 = Face3(0);
-    pub const FULL: Face3 = Face3::new(true, true, true, true, true, true);
-    pub const fn from_raw(u: u32) -> Self {
-        Face3(u)
-    }
-    pub const fn to_raw(self) -> u32 {
-        self.0
-    }
-    pub const fn new(xn: bool, xp: bool, yn: bool, yp: bool, zn: bool, zp: bool) -> Self {
-        Face3(
-            (if xn { 1 } else { 0 })
-                | (if xp { 2 } else { 0 })
-                | (if yn { 4 } else { 0 })
-                | (if yp { 8 } else { 0 })
-                | (if zn { 16 } else { 0 })
-                | (if zp { 32 } else { 0 }),
-        )
-    }
-
-    pub fn xn(self) -> bool {
-        self.0 & 1 != 0
-    }
-    pub fn xp(self) -> bool {
-        self.0 & 2 != 0
-    }
-    pub fn x(self) -> bool {
-        self.0 & (1 | 2) != 0
-    }
-    pub fn yn(self) -> bool {
-        self.0 & 4 != 0
-    }
-    pub fn yp(self) -> bool {
-        self.0 & 8 != 0
-    }
-    pub fn y(self) -> bool {
-        self.0 & (4 | 8) != 0
-    }
-    pub fn zn(self) -> bool {
-        self.0 & 16 != 0
-    }
-    pub fn zp(self) -> bool {
-        self.0 & 32 != 0
-    }
-    pub fn z(self) -> bool {
-        self.0 & (32 | 16) != 0
-    }
-    pub fn set_xn(&mut self, xn: bool) {
-        self.0 = (self.0 & !1) | (if xn { 1 } else { 0 });
-    }
-
-    pub fn set_xp(&mut self, xp: bool) {
-        self.0 = (self.0 & !2) | (if xp { 2 } else { 0 });
-    }
-
-    pub fn set_yn(&mut self, yn: bool) {
-        self.0 = (self.0 & !4) | (if yn { 4 } else { 0 });
-    }
-
-    pub fn set_yp(&mut self, yp: bool) {
-        self.0 = (self.0 & !8) | (if yp { 8 } else { 0 });
-    }
-
-    pub fn set_zn(&mut self, zn: bool) {
-        self.0 = (self.0 & !16) | (if zn { 16 } else { 0 });
-    }
-    pub fn set_zp(&mut self, zp: bool) {
-        self.0 = (self.0 & !32) | (if zp { 32 } else { 0 });
-    }
-
-    pub fn and(self, o: Face3) -> Face3 {
-        Face3::from_raw(self.0 & o.0)
-    }
-
-    pub fn count(self) -> u32 {
-        let mut c = 0;
-        let mut n = self.0;
-        while n != 0 {
-            if n & 1 != 0 {
-                c += 1;
-            }
-            n = n >> 1;
-        }
-        c
-    }
 }

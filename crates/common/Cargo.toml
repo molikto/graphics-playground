@@ -5,6 +5,9 @@ edition = "2021"
 
 [dependencies]
 bytemuck = { version = "1.7.2", features = ["derive"] }
+spirv-std = { git = "https://github.com/EmbarkStudios/rust-gpu/", features = [
+    "glam",
+] }
 
 [target.'cfg(target_arch = "spirv")'.dependencies]
 glam = { version = "0.20", default-features = false, features = ["libm", "bytemuck"] }

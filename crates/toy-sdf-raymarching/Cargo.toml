@@ -1,0 +1,11 @@
+[package]
+name = "toy-sdf-raymarching"
+version = "0.1.0"
+edition = "2021"
+
+
+[dependencies]
+common = { path = "../common" }
+bevy-common = { path = "../bevy-common" }
+bevy = "0.6.0"
+rust-gpu-builder = { path="../rust-gpu-builder" }
